@@ -2,6 +2,8 @@ use crate::excel::reader::{ExcelReader, ExcelReaderTrait};
 
 mod xml;
 mod excel;
+mod model;
+mod parser;
 
 #[tauri::command]
 fn greet(name: &str) -> String {

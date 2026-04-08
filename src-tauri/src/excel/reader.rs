@@ -2,20 +2,22 @@ use std::collections::HashMap;
 
 use calamine::{Data, Range, Reader, open_workbook_auto};
 
+use crate::model::table::{Table, TableTrait};
+
 pub struct ExcelReader<'a> {
     path: &'a str,
     range: Range<Data>,
-    pub data_row: Vec<HashMap<String, String>>,
-    pub header: HashMap<usize, String>,
+    pub table: Table,
+    pub header: Vec<String>,
 }
 
 pub trait ExcelReaderTrait<'a> {
     fn new(path: &'a str) -> Result<ExcelReader<'a>, String>;
-    fn read_excel(&mut self) -> Result<(), &'static str>;
+    fn read_excel(&mut self) -> Result<(), String>;
 }
 
 impl<'a> ExcelReader<'a> {
-    fn extract_header(range: &Range<Data>) -> Result<HashMap<usize, String>, String> {
+    fn extract_header(range: &Range<Data>) -> Result<Vec<String>, String> {
         let header_row = match range.rows().into_iter().next() {
             Some(r) => r,
             None => {
@@ -23,9 +25,9 @@ impl<'a> ExcelReader<'a> {
             }
         };
 
-        let mut headers = HashMap::new();
+        let mut headers: Vec<String> = Vec::new();
 
-        for (col_idx, cell) in header_row.iter().enumerate() {
+        for cell in header_row.iter() {
             let cell_value = match cell {
                 Data::String(s) => s.to_string(),
                 Data::DateTime(d) => d.to_string(),
@@ -34,13 +36,7 @@ impl<'a> ExcelReader<'a> {
                 _ => String::from("")
             };
 
-            match headers.insert(col_idx, cell_value) {
-                Some(v) => {
-                    let error_msg = format!("The column {} was referenced more than once", v);
-                    return Err(error_msg);
-                },
-                None => {},
-            };
+            headers.push(cell_value);
         }
 
         Ok(headers)
@@ -76,20 +72,20 @@ impl<'a> ExcelReaderTrait<'a> for ExcelReader<'a> {
         Ok(ExcelReader {
             path,
             range: range,
-            data_row: Vec::new(),
+            table: Table::new(&header),
             header: header,
         })
     }
     
-    fn read_excel(&mut self) -> Result<(), &'static str> {
-        for (_row_idx, row) in self.range.rows().enumerate().skip(1) {
-            let mut row_map: HashMap<String, String> = HashMap::new();
-
+    fn read_excel(&mut self) -> Result<(), String> {
+        for row in self.range.rows().skip(1) {
             for (col_idx, cell) in row.iter().enumerate() {
-                let header = match self.header.get(&col_idx) {
+                let header = match self.header.get(col_idx) {
                     Some(h) => h,
                     None => {
-                        return Err("A column is missing");
+                        return Err(
+                            format!("Column {} is missing", col_idx)
+                        );
                     },
                 };
 
@@ -101,10 +97,13 @@ impl<'a> ExcelReaderTrait<'a> for ExcelReader<'a> {
                     _ => String::from("")
                 };
 
-                row_map.insert(header.to_string(), cell_value);
+                match self.table.push(header, cell_value) {
+                    Ok(_) => {},
+                    Err(e) => {
+                        return Err(e);
+                    },
+                };
             }
-
-            self.data_row.push(row_map);
         }
 
         Ok(())
