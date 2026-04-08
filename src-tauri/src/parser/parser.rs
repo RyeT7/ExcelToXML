@@ -1,17 +1,19 @@
 use std::collections::HashMap;
 
-use crate::datastructures::table::Table;
+use crate::{datastructures::table::{Table, TableTrait}, model::mapping::HeaderMapping};
 
-pub struct Parser {
-
-}
+pub struct Parser {}
 
 pub trait ParserTrait {
     
 }
 
 impl Parser {
-    fn normalize_data(data: &Table) {
-        
+    fn map_header(mut table: &Table, mapping: HeaderMapping) -> Result<(), String> {
+        Ok(())
     }
+}
+
+impl ParserTrait for Parser {
+    
 }

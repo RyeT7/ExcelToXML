@@ -1,13 +1,15 @@
 use std::collections::{HashMap, hash_map::Entry};
 
 pub struct Table {
-    pub table: HashMap<String, Vec<String>>,
+    table: HashMap<String, Vec<String>>,
 }
 
 pub trait TableTrait {
     fn new(headers: &Vec<String>) -> Result<Table, String>;
     fn push(&mut self, key: &str, value: String) -> Result<(), String>;
     fn push_keys(&mut self, keys: &Vec<String>) -> Result<(), String>;
+    fn get(&mut self, key: String) -> Result<Vec<String>, String>;
+    fn rename_key(&mut self, key_mapper: HashMap<String, String>) -> Result<(), String>;
 }
 
 impl TableTrait for Table {
@@ -57,4 +59,31 @@ impl TableTrait for Table {
 
         Ok(())
     }
+    
+    fn get(&mut self, key: String) -> Result<Vec<String>, String> {
+        todo!()
+    }
+    
+    fn rename_key(&mut self, key_mapper: HashMap<String, String>) -> Result<(), String> {
+        for new_key in key_mapper.values() {
+            if self.table.contains_key(new_key) {
+                return Err(
+                    format!("Duplicate key: {}", new_key)
+                );
+            }
+        }
+
+        for (old_key, new_key) in key_mapper {
+            match self.table.remove(&old_key) {
+                Some(v) => {
+                    self.table.insert(new_key, v);
+                },
+                None => {},
+            }
+        }
+
+        Ok(())
+    }
+
+    
 }
