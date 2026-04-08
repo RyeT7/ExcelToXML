@@ -4,6 +4,7 @@ mod xml;
 mod excel;
 mod model;
 mod parser;
+mod datastructures;
 
 #[tauri::command]
 fn greet(name: &str) -> String {

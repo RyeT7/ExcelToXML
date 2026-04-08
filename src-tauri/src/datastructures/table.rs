@@ -5,20 +5,25 @@ pub struct Table {
 }
 
 pub trait TableTrait {
-    fn new(headers: &Vec<String>) -> Table;
+    fn new(headers: &Vec<String>) -> Result<Table, String>;
     fn push(&mut self, key: &str, value: String) -> Result<(), String>;
     fn push_keys(&mut self, keys: &Vec<String>) -> Result<(), String>;
 }
 
 impl TableTrait for Table {
-    fn new(headers: &Vec<String>) -> Table {
+    fn new(headers: &Vec<String>) -> Result<Table, String> {
         let mut table = Table {
             table: HashMap::new()
         };
 
-        table.push_keys(headers);
-
-        table
+        match table.push_keys(headers) {
+            Ok(_) => {
+                return Ok(table);
+            },
+            Err(e) => {
+                return Err(e);
+            },
+        };
     }
     
     fn push(&mut self, key: &str, value: String) -> Result<(), String> {

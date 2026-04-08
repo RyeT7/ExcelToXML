@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use crate::model::table::Table;
+use crate::datastructures::table::Table;
 
 pub struct Parser {
 

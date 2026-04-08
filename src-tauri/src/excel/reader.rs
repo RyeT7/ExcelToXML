@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use calamine::{Data, Range, Reader, open_workbook_auto};
 
-use crate::model::table::{Table, TableTrait};
+use crate::datastructures::table::{Table, TableTrait};
 
 pub struct ExcelReader<'a> {
     path: &'a str,
@@ -69,10 +69,17 @@ impl<'a> ExcelReaderTrait<'a> for ExcelReader<'a> {
             },
         };
 
+        let table = match Table::new(&header) {
+            Ok(t) => t,
+            Err(e) => {
+                return Err(e);
+            },
+        };
+
         Ok(ExcelReader {
             path,
             range: range,
-            table: Table::new(&header),
+            table: table,
             header: header,
         })
     }
