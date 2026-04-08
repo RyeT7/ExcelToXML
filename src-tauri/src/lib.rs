@@ -1,6 +1,7 @@
-use calamine::{Reader, Rows, Xlsx, open_workbook, open_workbook_auto};
+use crate::excel::reader::{ExcelReader, ExcelReaderTrait};
 
 mod xml;
+mod excel;
 
 #[tauri::command]
 fn greet(name: &str) -> String {
@@ -9,6 +10,8 @@ fn greet(name: &str) -> String {
 
 #[tauri::command]
 fn convert(path: &str) -> String {
+    let reader = ExcelReader::new(path);
+
     "test".to_string()
 }
 

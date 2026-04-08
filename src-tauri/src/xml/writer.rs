@@ -1,13 +1,13 @@
 use crate::xml::attributes::XMLAttributes;
 
-pub struct XMLWriter<'a> {
+struct XMLWriter<'a> {
     xml: String,
     tags: Vec<&'a str>,
     last_padding: usize,
 }
 
 pub trait XMLWriterTrait<'a> {
-    fn new(&mut self);
+    fn new() -> XMLWriter<'a>;
     fn new_tag(
         &mut self,
         tag_name: &'a str,
@@ -66,9 +66,12 @@ impl<'a> XMLWriter<'a> {
 
 
 impl<'a> XMLWriterTrait<'a> for XMLWriter<'a> {
-    fn new(&mut self) {
-        self.xml = String::new();
-        self.last_padding = 0;
+    fn new() -> XMLWriter<'a> {
+        XMLWriter {
+            xml             : String::new(),
+            last_padding    : 0,
+            tags            : Vec::new(),
+        }
     }
 
     fn new_tag(
