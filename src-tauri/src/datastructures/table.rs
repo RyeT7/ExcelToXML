@@ -6,10 +6,12 @@ pub struct Table {
 
 pub trait TableTrait {
     fn new(headers: &Vec<String>) -> Result<Table, String>;
-    fn push(&mut self, key: &str, value: String) -> Result<(), String>;
+    fn push(&mut self, key: &str, value: &str) -> Result<(), String>;
     fn push_keys(&mut self, keys: &Vec<String>) -> Result<(), String>;
-    fn get(&mut self, key: &str) -> Result<&Vec<String>, String>;
+    fn get(&mut self, key: &str) -> Result<Table, String>;
     fn rename_key(&mut self, key_mapper: HashMap<String, String>) -> Result<(), String>;
+    fn push_all(&mut self, key: &str, values: &[String]) -> Result<(), String>;
+    fn remove_duplicates(&mut self) -> Result<(), String>;
 }
 
 impl TableTrait for Table {
@@ -28,10 +30,10 @@ impl TableTrait for Table {
         };
     }
     
-    fn push(&mut self, key: &str, value: String) -> Result<(), String> {
+    fn push(&mut self, key: &str, value: &str) -> Result<(), String> {
         match self.table.get_mut(key) {
             Some(v) => {
-                v.push(value);
+                v.push(value.to_string());
             },
             None => {
                 return Err(
@@ -60,11 +62,24 @@ impl TableTrait for Table {
         Ok(())
     }
     
-    fn get(&mut self, key: &str) -> Result<&Vec<String>, String> {
+    fn get(&mut self, key: &str) -> Result<Table, String> {
         match self.table.get(key) {
-            Some(v) => Ok(v),
+            Some(v) => {
+                let header: Vec<String> = vec![key.to_string()];
+
+                let mut table = Table::new(&header)?;
+
+                match table.push_all(key, v) {
+                    Ok(_) => {},
+                    Err(e) => {
+                        return Err(e);
+                    },
+                };
+
+                Ok(table)
+            },
             None => Err(
-                format!("Key ot found: {}", key)
+                format!("Key not found: {}", key)
             ),
         }
     }
@@ -89,6 +104,23 @@ impl TableTrait for Table {
 
         Ok(())
     }
-
     
+    fn push_all(&mut self, key: &str, values: &[String]) -> Result<(), String> {
+        match self.table.get_mut(key) {
+            Some(v) => {
+                v.extend(values.iter().cloned());
+            },
+            None => {
+                return Err(
+                    format!("Key does not exist: {}", key)
+                );
+            },
+        }
+
+        Ok(())
+    }
+    
+    fn remove_duplicates(&mut self) -> Result<(), String> {
+        Ok(())
+    }
 }

@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 
 pub struct HeaderMapping {
-    mapping: HashMap<String, String>,
+    pub mapping: HashMap<String, String>,
 }
 
 pub trait HeaderMappingTrait {

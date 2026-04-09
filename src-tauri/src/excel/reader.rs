@@ -104,7 +104,7 @@ impl<'a> ExcelReaderTrait<'a> for ExcelReader<'a> {
                     _ => String::from("")
                 };
 
-                match self.table.push(header, cell_value) {
+                match self.table.push(header, &cell_value) {
                     Ok(_) => {},
                     Err(e) => {
                         return Err(e);
