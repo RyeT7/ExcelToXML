@@ -1,4 +1,4 @@
-use std::collections::{HashMap, hash_map::Entry};
+use std::{collections::{HashMap, hash_map::Entry}, fmt::format};
 
 pub struct Table {
     table: HashMap<String, Vec<String>>,
@@ -8,7 +8,7 @@ pub trait TableTrait {
     fn new(headers: &Vec<String>) -> Result<Table, String>;
     fn push(&mut self, key: &str, value: String) -> Result<(), String>;
     fn push_keys(&mut self, keys: &Vec<String>) -> Result<(), String>;
-    fn get(&mut self, key: String) -> Result<Vec<String>, String>;
+    fn get(&mut self, key: &str) -> Result<&Vec<String>, String>;
     fn rename_key(&mut self, key_mapper: HashMap<String, String>) -> Result<(), String>;
 }
 
@@ -60,8 +60,13 @@ impl TableTrait for Table {
         Ok(())
     }
     
-    fn get(&mut self, key: String) -> Result<Vec<String>, String> {
-        todo!()
+    fn get(&mut self, key: &str) -> Result<&Vec<String>, String> {
+        match self.table.get(key) {
+            Some(v) => Ok(v),
+            None => Err(
+                format!("Key ot found: {}", key)
+            ),
+        }
     }
     
     fn rename_key(&mut self, key_mapper: HashMap<String, String>) -> Result<(), String> {
