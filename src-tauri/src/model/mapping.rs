@@ -2,6 +2,7 @@ use std::collections::HashMap;
 
 pub struct HeaderMapping {
     pub mapping: HashMap<String, String>,
+    pub invoice_number_column: String,
 }
 
 pub trait HeaderMappingTrait {

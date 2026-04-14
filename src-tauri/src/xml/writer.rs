@@ -1,6 +1,6 @@
 use crate::xml::attributes::XMLAttributes;
 
-struct XMLWriter<'a> {
+pub struct XMLWriter<'a> {
     xml: String,
     tags: Vec<&'a str>,
     last_padding: usize,
@@ -8,21 +8,28 @@ struct XMLWriter<'a> {
 
 pub trait XMLWriterTrait<'a> {
     fn new() -> XMLWriter<'a>;
-    fn new_tag(
+    fn new_open_tag(
         &mut self,
         tag_name: &'a str,
-        attributes: Vec<XMLAttributes>,
+        attributes: &[XMLAttributes],
         content: Option<&str>
     );
-    fn escape_characters(&mut self, content: String) -> String;
+    fn escape_characters(&mut self, content: &str) -> String;
     fn close_current_tag(&mut self) -> Result<(), &'static str>;
+    fn new_empty_tag(&mut self, tag_name: &str) -> Result<(), &'static str>;
+    fn new_open_close_tag(
+        &mut self,
+        tag_name: &'a str,
+        attributes: &[XMLAttributes],
+        content: Option<&str>
+    );
 }
 
 impl<'a> XMLWriter<'a> {
     fn create_open_tag(
         &mut self,
         tag_name: &str,
-        attributes: Vec<XMLAttributes>
+        attributes: &[XMLAttributes]
     ) {
         self.left_pad();
         self.xml.push('<');
@@ -42,7 +49,13 @@ impl<'a> XMLWriter<'a> {
     fn add_content(&mut self, content: Option<&str>) {
         if let Some(c) = content {
             self.left_pad();
-            self.xml.push_str(c);
+
+            let normalized_content = self.escape_characters(c);
+
+            self.xml.push_str(
+                &normalized_content
+            );
+
             self.xml.push('\n');
         }
     }
@@ -55,12 +68,48 @@ impl<'a> XMLWriter<'a> {
 
     fn create_close_tag(&mut self, tag_name: &str) {
         self.left_pad();
+        self.xml.push_str("</");
+        self.xml.push_str(tag_name);
+    
+        self.xml.push('>');
+    
+        self.xml.push('\n');
+    }
+
+    fn create_self_closing_tag(&mut self, tag_name: &str) {
+        self.left_pad();
+        self.xml.push_str(&format!("<{} />", tag_name));
+    }
+
+    fn create_one_line_open_close_tag(
+        &mut self,
+        tag_name: &str,
+        attributes: &[XMLAttributes],
+        content: Option<&str>
+    ) {
+        self.left_pad();
         self.xml.push('<');
         self.xml.push_str(tag_name);
     
-        self.xml.push_str("/>");
-    
-        self.xml.push('\n');
+        for attr in attributes {
+            self.xml.push_str(
+                &format!(" {}=\"{}\"", attr.attribute_name, attr.attribute_value)
+            );
+        }
+
+        match content {
+            Some(c) => {
+                let normalized_content = self.escape_characters(c);
+                self.xml.push_str(
+                    &format!(">{}</{}>\n", normalized_content, tag_name)
+                );
+            },
+            None => {
+                self.xml.push_str(
+                    &format!("></{}>\n", tag_name)
+                );
+            },
+        }
     }
 }
 
@@ -74,10 +123,10 @@ impl<'a> XMLWriterTrait<'a> for XMLWriter<'a> {
         }
     }
 
-    fn new_tag(
+    fn new_open_tag(
         &mut self,
         tag_name: &'a str,
-        attributes: Vec<XMLAttributes>,
+        attributes: &[XMLAttributes],
         content: Option<&str>
     ) {
         self.create_open_tag(tag_name, attributes);
@@ -88,7 +137,7 @@ impl<'a> XMLWriterTrait<'a> for XMLWriter<'a> {
         self.last_padding += 1;
     }
     
-    fn escape_characters(&mut self, content: String) -> String {
+    fn escape_characters(&mut self, content: &str) -> String {
         content.replace("\"", "&quot;")
             .replace("'", "&apos;")
             .replace("<", "&lt;")
@@ -99,13 +148,54 @@ impl<'a> XMLWriterTrait<'a> for XMLWriter<'a> {
     fn close_current_tag(&mut self) -> Result<(), &'static str> {
         self.last_padding -= 1;
 
-        let tag = self.tags.last();
-
-        if let Some(t) = tag {
+        if let Some(t) = self.tags.pop() {
             self.create_close_tag(t);
             return Ok(())
         } else {
             return Err("Invalid format: Close called too early");
         }
+    }
+
+    fn new_empty_tag(&mut self, tag_name: &str) -> Result<(), &'static str> {
+        self.create_self_closing_tag(tag_name);
+
+        self.last_padding -= 1;
+
+        Ok(())
+    }
+
+    /// This function can either create an immediate open and close tag
+    /// or it could create a self closing tag depending on what your
+    /// content is.
+    /// 
+    /// A non-empty string will get you an open tag, however, None or an
+    /// empty string will produce a self closing tag.
+    /// 
+    /// # Examples
+    /// ```
+    /// let self_closing_tag = new_open_close_tag("Tag", &[], Option::None);
+    /// asserteq!(
+    ///     self_closing_tag,
+    ///     "<Tag />\n"
+    /// );
+    /// 
+    /// let open_close_tag = new_open_close_tag("Tag", &[], Option::Some("content"));
+    /// asserteq!(
+    ///     open_close_tag,
+    ///     "<Tag>content</Tag>\n"
+    /// );
+    /// ```
+    fn new_open_close_tag(
+        &mut self,
+        tag_name: &'a str,
+        attributes: &[XMLAttributes],
+        content: Option<&str>
+    ) {
+        if content.is_some_and(|c| c.ne("")) {
+            self.create_one_line_open_close_tag(tag_name, attributes, content);
+            return;
+        }
+
+        self.create_self_closing_tag(tag_name);
     }
 }
