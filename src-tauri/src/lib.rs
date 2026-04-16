@@ -1,10 +1,10 @@
 use crate::excel::reader::{ExcelReader, ExcelReaderTrait};
 
-mod xml;
-mod excel;
-mod model;
-mod parser;
-mod datastructures;
+pub mod xml;
+pub mod excel;
+pub mod model;
+pub mod parser;
+pub mod datastructures;
 
 #[tauri::command]
 fn greet(name: &str) -> String {

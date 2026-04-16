@@ -78,7 +78,7 @@ impl<'a> XMLWriter<'a> {
 
     fn create_self_closing_tag(&mut self, tag_name: &str) {
         self.left_pad();
-        self.xml.push_str(&format!("<{} />", tag_name));
+        self.xml.push_str(&format!("<{} />\n", tag_name));
     }
 
     fn create_one_line_open_close_tag(
@@ -110,6 +110,10 @@ impl<'a> XMLWriter<'a> {
                 );
             },
         }
+    }
+
+    pub fn get_xml(&self) -> &str {
+        &self.xml 
     }
 }
 
@@ -173,17 +177,21 @@ impl<'a> XMLWriterTrait<'a> for XMLWriter<'a> {
     /// 
     /// # Examples
     /// ```
-    /// let self_closing_tag = new_open_close_tag("Tag", &[], Option::None);
-    /// asserteq!(
-    ///     self_closing_tag,
-    ///     "<Tag />\n"
+    /// extern crate exceltoxml_lib;
+    /// 
+    /// use exceltoxml_lib::xml::writer::{XMLWriter, XMLWriterTrait};
+    /// 
+    /// let mut xml_writer = XMLWriter::new();
+    /// 
+    /// xml_writer.new_open_close_tag("Tag", &[], None);
+    /// 
+    /// xml_writer.new_open_close_tag("Tag", &[], Some("content"));
+    /// 
+    /// assert_eq!(
+    ///     xml_writer.get_xml(),
+    ///     "<Tag />\n<Tag>content</Tag>\n"
     /// );
     /// 
-    /// let open_close_tag = new_open_close_tag("Tag", &[], Option::Some("content"));
-    /// asserteq!(
-    ///     open_close_tag,
-    ///     "<Tag>content</Tag>\n"
-    /// );
     /// ```
     fn new_open_close_tag(
         &mut self,
@@ -191,7 +199,7 @@ impl<'a> XMLWriterTrait<'a> for XMLWriter<'a> {
         attributes: &[XMLAttributes],
         content: Option<&str>
     ) {
-        if content.is_some_and(|c| c.ne("")) {
+        if content.is_some_and(|c| !c.is_empty()) {
             self.create_one_line_open_close_tag(tag_name, attributes, content);
             return;
         }
