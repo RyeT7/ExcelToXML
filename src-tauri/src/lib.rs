@@ -1,4 +1,4 @@
-use crate::excel::reader::{ExcelReader, ExcelReaderTrait};
+use crate::{excel::reader::{ExcelReader, ExcelReaderTrait}, parser::parser::{Parser, ParserTrait}};
 
 pub mod xml;
 pub mod excel;
@@ -12,10 +12,12 @@ fn greet(name: &str) -> String {
 }
 
 #[tauri::command]
-fn convert(path: &str) -> String {
-    let reader = ExcelReader::new(path);
+fn convert(path: &str) -> Result<Vec<String>, String> {
+    let mut reader = ExcelReader::new(path)?;
 
-    "test".to_string()
+    reader.read_excel()?;
+
+    Ok(reader.header)
 }
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]

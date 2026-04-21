@@ -14,6 +14,7 @@ pub trait TableTrait {
     fn group_by(&mut self, keys: &[String]) -> Result<Vec<Table>, String>;
     fn rows(&self) -> Vec<HashMap<&str, &str>>;
     fn get_first(&self, key: &str) -> Result<&str, String>;
+    fn column(&self, key: &str) -> Result<&Vec<String>, String>;
 }
 
 impl TableTrait for Table {
@@ -224,4 +225,16 @@ impl TableTrait for Table {
             ),
         }
     }
+    
+    fn column(&self, key: &str) -> Result<&Vec<String>, String> {
+        match self.table.get(key) {
+            Some(v) => {
+                Ok(v)
+            },
+            None => Err(
+                format!("No item found in: {}", key)
+            ),
+        }
+    }
+
 }

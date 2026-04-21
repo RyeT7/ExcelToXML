@@ -19,8 +19,13 @@ pub trait XMLWriterTrait<'a> {
     fn new_empty_tag(&mut self, tag_name: &str) -> Result<(), &'static str>;
     fn new_open_close_tag(
         &mut self,
-        tag_name: &'a str,
+        tag_name: &str,
         attributes: &[XMLAttributes],
+        content: Option<&str>
+    );
+    fn new_open_close_tag_no_attributes(
+        &mut self,
+        tag_name: &str,
         content: Option<&str>
     );
 }
@@ -90,11 +95,13 @@ impl<'a> XMLWriter<'a> {
         self.left_pad();
         self.xml.push('<');
         self.xml.push_str(tag_name);
-    
-        for attr in attributes {
-            self.xml.push_str(
-                &format!(" {}=\"{}\"", attr.attribute_name, attr.attribute_value)
-            );
+
+        if attributes.len() > 0 {
+            for attr in attributes {
+                self.xml.push_str(
+                    &format!(" {}=\"{}\"", attr.attribute_name, attr.attribute_value)
+                );
+            }
         }
 
         match content {
@@ -195,7 +202,7 @@ impl<'a> XMLWriterTrait<'a> for XMLWriter<'a> {
     /// ```
     fn new_open_close_tag(
         &mut self,
-        tag_name: &'a str,
+        tag_name: &str,
         attributes: &[XMLAttributes],
         content: Option<&str>
     ) {
@@ -206,4 +213,17 @@ impl<'a> XMLWriterTrait<'a> for XMLWriter<'a> {
 
         self.create_self_closing_tag(tag_name);
     }
+
+    fn new_open_close_tag_no_attributes(
+        &mut self,
+        tag_name: &str,
+        content: Option<&str>
+    ) {
+        self.new_open_close_tag(
+            tag_name,
+            &[],
+            content
+        );
+    }
+
 }
