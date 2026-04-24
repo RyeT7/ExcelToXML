@@ -1,4 +1,4 @@
-use crate::xml::attributes::XMLAttributes;
+use crate::domain::enums::xmlattributes::XMLAttributes;
 
 pub struct XMLWriter<'a> {
     xml: String,

@@ -1,6 +1,6 @@
-use std::{collections::HashMap, ops::ControlFlow};
+use std::collections::HashMap;
 
-use crate::{datastructures::table::{Table, TableTrait}, model::mapping::HeaderMapping, parser::tags::Tags, xml::{attributes::XMLAttributes, writer::{XMLWriter, XMLWriterTrait}}};
+use crate::{domain::{datastructures::table::Table, enums::xmlattributes::XMLAttributes}, model::mapping::HeaderMapping, parser::tags::Tags, xml::writer::{XMLWriter, XMLWriterTrait}};
 
 pub struct Parser<'a> {
     pub table: Table,
@@ -50,9 +50,7 @@ impl Parser<'_> {
     ) -> Result<(), String> {
         let key = tag.as_hierarchical_str();
 
-        let content: Table = invoice.get(key)?;
-
-        for content in content.column(key)? {
+        for content in invoice.column(key)? {
             self.write_no_attributes_open_close_tag(
                 tag,
                 Some(content)

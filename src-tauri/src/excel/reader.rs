@@ -2,21 +2,22 @@ use std::collections::HashMap;
 
 use calamine::{Data, Range, Reader, open_workbook_auto};
 
-use crate::datastructures::table::{Table, TableTrait};
+use crate::domain::datastructures::table::{Table};
 
-pub struct ExcelReader<'a> {
-    path: &'a str,
+pub struct ExcelReader {
+    path: String,
     range: Range<Data>,
     pub table: Table,
-    pub header: Vec<String>,
+    header: Vec<String>,
 }
 
-pub trait ExcelReaderTrait<'a> {
-    fn new(path: &'a str) -> Result<ExcelReader<'a>, String>;
+pub trait ExcelReaderTrait {
+    fn new(path: &str) -> Result<ExcelReader, String>;
     fn read_excel(&mut self) -> Result<(), String>;
+    fn get_header(&self) -> &Vec<String>;
 }
 
-impl<'a> ExcelReader<'a> {
+impl ExcelReader {
     fn extract_header(range: &Range<Data>) -> Result<Vec<String>, String> {
         let header_row = match range.rows().into_iter().next() {
             Some(r) => r,
@@ -43,8 +44,8 @@ impl<'a> ExcelReader<'a> {
     }
 }
 
-impl<'a> ExcelReaderTrait<'a> for ExcelReader<'a> {
-    fn new(path: &'a str) -> Result<ExcelReader<'a>, String> {
+impl ExcelReaderTrait for ExcelReader {
+    fn new(path: &str) -> Result<ExcelReader, String> {
         let workbook = open_workbook_auto(path);
 
         let range = match workbook {
@@ -77,7 +78,7 @@ impl<'a> ExcelReaderTrait<'a> for ExcelReader<'a> {
         };
 
         Ok(ExcelReader {
-            path,
+            path: path.to_string(),
             range: range,
             table: table,
             header: header,
@@ -114,5 +115,9 @@ impl<'a> ExcelReaderTrait<'a> for ExcelReader<'a> {
         }
 
         Ok(())
+    }
+    
+    fn get_header(&self) -> &Vec<String> {
+        &self.header
     }
 }
