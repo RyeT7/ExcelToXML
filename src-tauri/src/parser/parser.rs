@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use crate::{domain::{datastructures::table::Table, enums::xmlattributes::XMLAttributes}, model::mapping::HeaderMapping, parser::tags::Tags, xml::writer::{XMLWriter, XMLWriterTrait}};
+use crate::{domain::{datastructures::table::Table, enums::{requiredtags::Tags, xmlattributes::XMLAttributes}}, model::mapping::HeaderMapping, xml::writer::{XMLWriter, XMLWriterTrait}};
 
 pub struct Parser<'a> {
     pub table: Table,

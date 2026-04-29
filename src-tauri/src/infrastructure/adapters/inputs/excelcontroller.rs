@@ -14,16 +14,6 @@ pub async fn load_excel(
 }
 
 #[tauri::command]
-pub async fn get_headers(
-    state: State<'_, AppState>,
-    session_id: String,
-) -> Result<Vec<String>, String> {
-    state
-        .get_headers_use_case
-        .get_headers(&session_id)
-}
-
-#[tauri::command]
 pub async fn view_excel(
     state: State<'_, AppState>,
     session_id: String,

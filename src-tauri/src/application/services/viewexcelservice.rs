@@ -1,6 +1,12 @@
 use std::sync::Arc;
 
-use crate::{application::ports::{inbound::viewexcelusecase::ViewExcelUseCase, outbound::sessionrepository::SessionRepository}, domain::datastructures::table::Table};
+use crate::{
+    application::ports::{
+        inbound::viewexcelusecase::ViewExcelUseCase,
+        outbound::sessionrepository::SessionRepository
+    },
+    domain::datastructures::table::Table
+};
 
 pub struct ViewExcelService {
     session_repository: Arc<dyn SessionRepository>,
