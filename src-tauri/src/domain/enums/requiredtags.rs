@@ -129,6 +129,7 @@ impl Tags {
         Tags::BuyerTin,
         Tags::BuyerDocument,
         Tags::BuyerCountry,
+        Tags::BuyerDocumentNumber,
         Tags::BuyerName,
         Tags::BuyerAddress,
         Tags::BuyerEmail,

@@ -1,4 +1,4 @@
-use crate::{application::session::session::Session, domain::datastructures::table::Table};
+use crate::{application::session::session::Session, domain::{datastructures::table::Table, entities::tagmapping::{TagMapping, TagMappings}}};
 
 pub trait SessionRepository: Send + Sync {
     fn get(&self, session_id: &str) -> Result<Session, String>;
@@ -10,4 +10,6 @@ pub trait SessionRepository: Send + Sync {
     fn set_table(&self, session_id: &str, table: Table) -> Result<(), String>;
 
     fn get_table(&self, session_id: &str) -> Result<Table, String>;
+
+    fn get_tag_mappings(&self, session_id: &str) -> Result<TagMappings, String>;
 }

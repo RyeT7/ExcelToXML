@@ -1,11 +1,10 @@
-use crate::domain::datastructures::table::Table;
-use crate::domain::entities::tagmapping::TagMapping;
+use crate::domain::{datastructures::table::Table, entities::tagmapping::TagMappings};
 
 #[derive(Clone)]
 pub struct Session {
     pub table: Option<Table>,
     pub xml: Option<String>,
-    pub tag_mappings: Option<Vec<TagMapping>>,
+    pub tag_mappings: Option<TagMappings>,
 }
 
 impl Session {

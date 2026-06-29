@@ -1,5 +1,20 @@
-use std::{collections::HashMap, sync::RwLock};
-use crate::{application::{ports::outbound::sessionrepository::SessionRepository, session::session::Session}, domain::datastructures::table::Table};
+use std::{
+    collections::HashMap,
+    sync::RwLock
+};
+use crate::{
+    application::{
+        ports::outbound::sessionrepository::SessionRepository,
+        session::session::Session
+    },
+    domain::{
+        datastructures::table::Table,
+        entities::tagmapping::{
+            TagMapping,
+            TagMappings
+        }
+    }
+};
 
 pub struct TauriSessionRepository {
     sessions: RwLock<HashMap<String, Session>>,
@@ -68,5 +83,18 @@ impl SessionRepository for TauriSessionRepository {
             .table
             .clone()
             .ok_or("Table does not exist in session yet".to_string())
+    }
+    
+    fn get_tag_mappings(&self, session_id: &str) -> Result<TagMappings, String> {
+        let sessions = self.sessions.read().unwrap();
+
+        let session = sessions
+            .get(session_id)
+            .ok_or("Session does not exist")?;
+
+        session
+            .tag_mappings
+            .clone()
+            .ok_or("Tag Mappings do not exist in session yet".to_string())
     }
 }

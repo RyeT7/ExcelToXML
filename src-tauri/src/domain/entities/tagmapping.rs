@@ -1,21 +1,24 @@
+use std::collections::HashMap;
+
+#[derive(Clone, Debug)]
+pub struct TagMappings {
+    pub mappings: HashMap<String, TagMapping>,
+    pub invoice_number_column: String,
+    pub good_service_identifier_column: String,
+}
+
 #[derive(Clone, Debug)]
 pub struct TagMapping {
-    pub literal: String,
-    pub hierarchical: String,
     pub mapped_column: Option<String>,
     pub default_value: Option<String>,
 }
 
 impl TagMapping {
     pub fn new(
-        literal: String,
-        hierarchical: String,
         mapped_column: Option<String>,
         default_value: Option<String>,
     ) -> Self {
         TagMapping {
-            literal,
-            hierarchical,
             mapped_column,
             default_value,
         }

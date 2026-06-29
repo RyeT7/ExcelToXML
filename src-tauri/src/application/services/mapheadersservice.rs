@@ -1,12 +1,13 @@
+use std::collections::HashMap;
 use std::sync::Arc;
 
 use crate::application::ports::{
     inbound::mapheadersusecase::MapHeadersUseCase,
     outbound::sessionrepository::SessionRepository
 };
-use crate::application::dto::request::tagmappingdto::TagMappingDTO;
+use crate::application::dto::request::tagmappingdto::{TagMappingDTO, TagMappingsDTO};
 use crate::domain::enums::requiredtags::Tags;
-use crate::domain::entities::tagmapping::TagMapping;
+use crate::domain::entities::tagmapping::{TagMapping, TagMappings};
 
 pub struct MapHeadersService {
     session_repository: Arc<dyn SessionRepository>,
@@ -23,32 +24,29 @@ impl MapHeadersService {
 }
 
 impl MapHeadersUseCase for MapHeadersService {
-    fn map_headers(&self, session_id: &str, mappings: &[TagMappingDTO]) -> Result<(), String> {
+    fn map_headers(&self, session_id: &str, mappings: &TagMappingsDTO) -> Result<(), String> {
         let mut session = self.session_repository.get(session_id)?;
         let table = session.table.as_ref()
             .ok_or("No table found in session")?;
 
-        // Validate all mappable tags are covered
-        for tag in Tags::MAPPABLE {
-            let mapping = mappings.iter()
-                .find(|m| m.literal == tag.as_literal_str())
-                .ok_or(format!("Missing mapping for required tag: {}", tag.as_literal_str()))?;
+        let mapping_map = &mappings.tag_mappings;
 
-            // Validate each mapping has either a column or default value
+        for tag in Tags::MAPPABLE {
+            let mapping = mapping_map.get(tag.as_hierarchical_str())
+                .ok_or(format!("Missing mapping for tag '{}'", tag.as_literal_str()))?;
+
             let has_column = mapping.mapped_column.is_some();
-            let has_default = mapping.default_value.as_ref()
-                .map_or(false, |v| !v.is_empty());
+            let has_default = mapping.default_value.is_some();
 
             if !has_column && !has_default {
                 return Err(format!(
-                    "Tag '{}' must have either a mapped column or a non-empty default value",
+                    "Tag '{}' must have either a mapped column or a default value",
                     tag.as_literal_str()
                 ));
             }
 
-            // Validate mapped column exists in table
             if let Some(column) = &mapping.mapped_column {
-                if !table.headers().contains(column) {
+                if !column.is_empty() && !table.headers().contains(column) {
                     return Err(format!(
                         "Column '{}' not found in uploaded file",
                         column
@@ -57,18 +55,21 @@ impl MapHeadersUseCase for MapHeadersService {
             }
         }
 
-        // Store mappings in session (convert DTO to domain entity)
-        let domain_mappings: Vec<TagMapping> = mappings
+        let domain_mappings: HashMap<String, TagMapping> = mapping_map
             .iter()
-            .map(|m| TagMapping::new(
-                m.literal.clone(),
-                m.hierarchical.clone(),
+            .map(|(k, m)| (k.clone(), TagMapping::new(
                 m.mapped_column.clone(),
                 m.default_value.clone(),
-            ))
+            )))
             .collect();
 
-        session.tag_mappings = Some(domain_mappings);
+        let domain_mapping_all: TagMappings = TagMappings {
+            mappings: domain_mappings,
+            invoice_number_column: mappings.invoice_number_column.clone(),
+            good_service_identifier_column: mappings.good_service_identifier_column.clone(),
+        };
+
+        session.tag_mappings = Some(domain_mapping_all);
         self.session_repository.update(session_id, session)?;
 
         Ok(())

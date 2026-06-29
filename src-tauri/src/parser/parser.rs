@@ -296,7 +296,6 @@ impl<'a> ParserTrait<'a> for Parser<'a> {
                 None
             );
 
-            // TODO: GoodService tags here
             self.write_good_service_tags(&invoice)?;
 
             // </ListOfGoodService>
@@ -307,5 +306,11 @@ impl<'a> ParserTrait<'a> for Parser<'a> {
         }
 
         Ok(())
+    }
+}
+
+impl<'a> Parser<'a> {
+    pub fn get_xml(&self) -> &str {
+        self.xml_writer.get_xml()
     }
 }
