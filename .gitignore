@@ -26,6 +26,7 @@ dist-ssr
 # Test files
 *.xlsx
 *.csv
+*.xml
 
 # Added by cargo
 

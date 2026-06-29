@@ -94,9 +94,38 @@ impl ConvertService {
         mapping: &TagMappings,
         mut invoice: Table
     ) -> Result<(), String> {
+        // Captured before grouping so it can be reported if the identifier
+        // turns out to be non-unique.
+        let invoice_number = invoice
+            .get_first(&mapping.invoice_number_column)?
+            .to_string();
+
         let good_services = invoice.group_by(&[mapping.good_service_identifier_column.to_string()])?;
 
         for good_service in good_services {
+            // Each good/service must map to exactly one row. If grouping by the
+            // identifier collapses several rows together, the identifier is not
+            // unique within this invoice and the generated <GoodService> would
+            // contain repeated child tags (a non-atomic result), so reject it.
+            let row_count = good_service
+                .column(&mapping.good_service_identifier_column)?
+                .len();
+
+            if row_count > 1 {
+                let identifier_value = good_service
+                    .get_first(&mapping.good_service_identifier_column)?;
+
+                return Err(format!(
+                    "Non-unique good/service identifier in invoice '{}': column '{}' value '{}' \
+                     appears in {} rows. Each good/service must be uniquely identified within an \
+                     invoice. Fix the data or choose a different identifier column, then convert again.",
+                    invoice_number,
+                    mapping.good_service_identifier_column,
+                    identifier_value,
+                    row_count
+                ));
+            }
+
             self.xml_writer
                 .lock()
                 .map_err(
@@ -208,6 +237,15 @@ impl ConvertUseCase for ConvertService {
             .lock()
             .map_err(|e| format!("Failed to acquire XML Writer lock: {e}"))?
             .take_xml();
+
+        // Invalidate any previously generated XML up front: if this conversion
+        // fails (e.g. a non-unique good/service identifier), the stale document
+        // must not remain downloadable.
+        {
+            let mut session = self.session_repository.get(session_id)?;
+            session.xml = None;
+            self.session_repository.update(session_id, session)?;
+        }
 
         let mut table = self.session_repository
             .get_table(session_id)?;
