@@ -5,7 +5,7 @@ use crate::application::ports::{
     inbound::mapheadersusecase::MapHeadersUseCase,
     outbound::sessionrepository::SessionRepository
 };
-use crate::application::dto::request::tagmappingdto::{TagMappingDTO, TagMappingsDTO};
+use crate::application::dto::request::tagmappingdto::{TagMappingsDTO};
 use crate::domain::enums::requiredtags::Tags;
 use crate::domain::entities::tagmapping::{TagMapping, TagMappings};
 

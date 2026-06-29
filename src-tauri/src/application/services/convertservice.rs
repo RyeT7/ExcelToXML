@@ -1,6 +1,31 @@
-use std::{collections::HashMap, sync::{Arc, Mutex}};
+use std::{
+    collections::HashMap,
+    sync::{
+        Arc,
+        Mutex
+    }
+};
 
-use crate::{application::ports::{inbound::convertusecase::ConvertUseCase, outbound::{sessionrepository::SessionRepository, xmlwriter::XMLWriter}}, domain::{datastructures::table::Table, entities::tagmapping::{TagMapping, TagMappings}, enums::{requiredtags::Tags, xmlattributes::XMLAttributes}}, model::mapping};
+use crate::{
+    application::ports::{
+        inbound::convertusecase::ConvertUseCase,
+        outbound::{
+            sessionrepository::SessionRepository,
+            xmlwriter::XMLWriter
+        }
+    },
+    domain::{
+        datastructures::table::Table,
+        entities::tagmapping::{
+            TagMapping,
+            TagMappings
+        },
+        enums::{
+            requiredtags::Tags,
+            xmlattributes::XMLAttributes
+        }
+    }
+};
 
 pub struct ConvertService {
     session_repository: Arc<dyn SessionRepository>,
