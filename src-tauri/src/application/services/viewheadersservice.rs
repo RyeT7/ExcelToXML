@@ -7,6 +7,12 @@ use crate::{
 
 pub struct ViewHeadersService;
 
+impl Default for ViewHeadersService {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl ViewHeadersService {
     pub fn new() -> Self {
         Self

@@ -19,8 +19,8 @@ impl CreateSessionService {
         id_generator: Arc<dyn IdGenerator>,
     ) -> Self {
         Self {
-            session_repository: session_repository,
-            id_generator: id_generator,
+            session_repository,
+            id_generator,
         }
     }
 }

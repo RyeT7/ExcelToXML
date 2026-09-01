@@ -10,6 +10,12 @@ pub struct TauriSessionRepository {
     sessions: RwLock<HashMap<String, Session>>,
 }
 
+impl Default for TauriSessionRepository {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl TauriSessionRepository {
     pub fn new() -> Self {
         TauriSessionRepository {

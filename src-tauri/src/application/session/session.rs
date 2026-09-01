@@ -7,6 +7,12 @@ pub struct Session {
     pub tag_mappings: Option<TagMappings>,
 }
 
+impl Default for Session {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl Session {
     pub fn new() -> Session {
         Session {

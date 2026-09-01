@@ -29,8 +29,8 @@ impl ConvertService {
         xml_writer: Arc<Mutex<dyn XMLWriter>>,
     ) -> Self {
         Self {
-            session_repository: session_repository,
-            xml_writer: xml_writer,
+            session_repository,
+            xml_writer,
         }
     }
 

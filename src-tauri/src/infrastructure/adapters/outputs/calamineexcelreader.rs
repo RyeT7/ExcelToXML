@@ -7,6 +7,12 @@ use crate::{
 
 pub struct CalamineExcelReader;
 
+impl Default for CalamineExcelReader {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl CalamineExcelReader {
     pub fn new() -> Self {
         Self {}
@@ -37,7 +43,7 @@ impl CalamineExcelReader {
     }
 
     fn extract_header(range: &Range<Data>) -> Result<Vec<String>, String> {
-        let header_row = match range.rows().into_iter().next() {
+        let header_row = match range.rows().next() {
             Some(r) => r,
             None => return Err("Header rows not found".to_string()),
         };

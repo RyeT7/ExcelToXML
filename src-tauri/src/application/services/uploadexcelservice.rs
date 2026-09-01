@@ -16,8 +16,8 @@ impl UploadExcelService {
         session_repository: Arc<dyn SessionRepository>,
     ) -> Self {
         Self {
-            reader: reader,
-            session_repository: session_repository,
+            reader,
+            session_repository,
         }
     }
 }

@@ -4,6 +4,12 @@ pub struct XMLWriterData<'a> {
     last_padding: usize,
 }
 
+impl<'a> Default for XMLWriterData<'a> {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl<'a> XMLWriterData<'a> {
     pub fn new() -> XMLWriterData<'a> {
         XMLWriterData {

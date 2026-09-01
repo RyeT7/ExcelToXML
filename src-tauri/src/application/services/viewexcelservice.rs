@@ -13,9 +13,7 @@ pub struct ViewExcelService {
 
 impl ViewExcelService {
     pub fn new(session_repository: Arc<dyn SessionRepository>) -> Self {
-        Self {
-            session_repository: session_repository,
-        }
+        Self { session_repository }
     }
 }
 

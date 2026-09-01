@@ -8,6 +8,12 @@ pub struct CustomXMLWriter {
     last_padding: usize,
 }
 
+impl Default for CustomXMLWriter {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl CustomXMLWriter {
     pub fn new() -> Self {
         Self {
@@ -86,7 +92,7 @@ impl CustomXMLWriter {
         self.xml.push('<');
         self.xml.push_str(tag_name);
 
-        if attributes.len() > 0 {
+        if !attributes.is_empty() {
             for attr in attributes {
                 self.xml.push_str(&format!(
                     " {}=\"{}\"",
@@ -133,9 +139,9 @@ impl XMLWriter for CustomXMLWriter {
 
         if let Some(t) = self.tags.pop() {
             self.create_close_tag(&t);
-            return Ok(());
+            Ok(())
         } else {
-            return Err("Invalid format: Close called too early".to_string());
+            Err("Invalid format: Close called too early".to_string())
         }
     }
 

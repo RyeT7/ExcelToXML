@@ -1,9 +1,6 @@
 use crate::{
     application::session::session::Session,
-    domain::{
-        datastructures::table::Table,
-        entities::tagmapping::{TagMapping, TagMappings},
-    },
+    domain::{datastructures::table::Table, entities::tagmapping::TagMappings},
 };
 
 pub trait SessionRepository: Send + Sync {

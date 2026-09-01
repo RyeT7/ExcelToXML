@@ -16,13 +16,9 @@ impl Table {
         };
 
         match table.push_keys(headers) {
-            Ok(_) => {
-                return Ok(table);
-            }
-            Err(e) => {
-                return Err(e);
-            }
-        };
+            Ok(_) => Ok(table),
+            Err(e) => Err(e),
+        }
     }
 
     pub fn headers(&self) -> &Vec<String> {
@@ -89,11 +85,8 @@ impl Table {
                 continue;
             }
 
-            match self.data.remove(&old_key) {
-                Some(v) => {
-                    self.data.insert(new_key, v);
-                }
-                None => {}
+            if let Some(v) = self.data.remove(&old_key) {
+                self.data.insert(new_key, v);
             }
         }
 

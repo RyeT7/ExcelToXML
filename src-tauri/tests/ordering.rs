@@ -187,7 +187,7 @@ fn goods_keep_the_order_the_spreadsheet_lists_them_in() {
     // Collapse the ten rows onto one invoice, leaving ten distinct goods.
     table.data.insert(
         "InvNo".to_string(),
-        std::iter::repeat("IV01".to_string()).take(10).collect(),
+        std::iter::repeat_n("IV01".to_string(), 10).collect(),
     );
 
     let expected: Vec<String> = (1..=10).map(|row| format!("ITEM{row:02}")).collect();
