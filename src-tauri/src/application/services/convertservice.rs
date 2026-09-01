@@ -6,6 +6,8 @@ use std::{
     }
 };
 
+use rust_decimal::Decimal;
+
 use crate::{
     application::ports::{
         inbound::convertusecase::ConvertUseCase,
@@ -23,7 +25,8 @@ use crate::{
         enums::{
             requiredtags::Tags,
             xmlattributes::XMLAttributes
-        }
+        },
+        services::{dates, formula}
     }
 };
 
@@ -62,28 +65,213 @@ impl ConvertService {
         Ok(())
     }
 
+    /// Resolves the single value a mapped tag takes for one invoice or one
+    /// good/service, from its mapped column or from its default value.
+    ///
+    /// Derived tags have no mapping and must be computed instead.
+    fn resolve_value<'a>(
+        tag: &Tags,
+        mapping: &'a HashMap<String, TagMapping>,
+        table: &'a Table,
+    ) -> Result<&'a str, String> {
+        let column_or_value = mapping.get(tag.as_hierarchical_str())
+            .ok_or(format!("No mapping found for tag '{}'", tag.as_literal_str()))?;
+
+        if let Some(c) = &column_or_value.mapped_column {
+            table.get_first(c)
+        } else if let Some(v) = &column_or_value.default_value {
+            Ok(v.as_str())
+        } else {
+            Err(format!("Tag '{}' must have either a mapped column or a default value", tag.as_literal_str()))
+        }
+    }
+
+    /// Reads a mapped tag as an amount, for use in a derived tag's formula.
+    ///
+    /// [`Self::validate_cells`] has already vetted every cell by this point,
+    /// so reaching the error arm means the two have drifted apart.
+    fn resolve_amount(
+        tag: &Tags,
+        mapping: &HashMap<String, TagMapping>,
+        table: &Table,
+    ) -> Result<Decimal, String> {
+        let raw = Self::resolve_value(tag, mapping, table)?;
+
+        match formula::parse_amount(raw) {
+            Ok(amount) => Ok(amount),
+            Err(formula::AmountError::Blank) if tag.blank_means_zero() => Ok(Decimal::ZERO),
+            Err(_) => Err(format!(
+                "Cannot compute from '{}': '{}' is not a number",
+                tag.as_literal_str(),
+                raw
+            )),
+        }
+    }
+
+    /// Reads a mapped tag as a date, in the canonical ISO form.
+    fn resolve_date(
+        tag: &Tags,
+        mapping: &HashMap<String, TagMapping>,
+        table: &Table,
+    ) -> Result<String, String> {
+        let raw = Self::resolve_value(tag, mapping, table)?;
+
+        dates::normalize(raw).ok_or(format!(
+            "Cannot write '{}': '{}' is not a date",
+            tag.as_literal_str(),
+            raw
+        ))
+    }
+
+    /// Describes what is wrong with a cell, or `None` if it is usable.
+    fn cell_problem(tag: &Tags, value: &str) -> Option<String> {
+        if tag.is_numeric() {
+            return Self::amount_problem(tag, value);
+        }
+
+        if tag.is_date() {
+            return Self::date_problem(value);
+        }
+
+        None
+    }
+
+    /// Anything reaching here that is not already ISO was text Excel never
+    /// recognised as a date, so its day/month order is genuinely unknown.
+    fn date_problem(value: &str) -> Option<String> {
+        if value.trim().is_empty() {
+            return Some("is empty — an invoice needs a date".to_string());
+        }
+
+        match dates::parse_iso(value) {
+            Some(_) => None,
+            None => Some(
+                "is not a date — Excel did not store it as one, so which part is the month \
+                 cannot be known; format the cell as a date in Excel, or type it as YYYY-MM-DD"
+                    .to_string()
+            ),
+        }
+    }
+
+    /// Describes what is wrong with a cell a formula needs, or `None` if it is
+    /// usable.
+    fn amount_problem(tag: &Tags, value: &str) -> Option<String> {
+        match formula::parse_amount(value) {
+            Ok(_) => None,
+            Err(formula::AmountError::Blank) => match tag.blank_means_zero() {
+                true => None,
+                false => Some("is empty — enter 0 if the line really has none".to_string()),
+            },
+            Err(formula::AmountError::NotANumber) => Some(match formula::amount_hint(value) {
+                Some(hint) => format!("is not a number — {hint}"),
+                None => "is not a number".to_string(),
+            }),
+        }
+    }
+
+    /// Checks every cell that has to hold a particular kind of value, before
+    /// any XML is written.
+    ///
+    /// Conversion could just fail on the first unusable cell, but a spreadsheet
+    /// is corrected as a whole: this walks the file once and reports every bad
+    /// cell together, so fixing them is one pass rather than one re-upload per
+    /// mistake. The table is still ungrouped here, so each problem can be
+    /// pinned to its original row.
+    fn validate_cells(table: &Table, mapping: &TagMappings) -> Result<(), String> {
+        const MAX_REPORTED: usize = 20;
+
+        // Used only to locate a bad cell, so a missing column is not fatal here
+        // — grouping reports that properly.
+        let invoice_numbers = table.column(&mapping.invoice_number_column).ok();
+
+        let mut problems: Vec<String> = Vec::new();
+
+        for tag in Tags::MAPPABLE.iter().filter(|tag| tag.is_numeric() || tag.is_date()) {
+            let entry = match mapping.mappings.get(tag.as_hierarchical_str()) {
+                Some(entry) => entry,
+                // A missing mapping is reported by resolve_value, with the
+                // wording that case deserves.
+                None => continue,
+            };
+
+            let column = match &entry.mapped_column {
+                Some(column) => column,
+                None => {
+                    let value = entry.default_value.as_deref().unwrap_or("");
+
+                    if let Some(problem) = Self::cell_problem(tag, value) {
+                        problems.push(format!(
+                            "{}, default value \"{}\": {}",
+                            tag.as_literal_str(),
+                            value,
+                            problem
+                        ));
+                    }
+
+                    continue;
+                }
+            };
+
+            for (index, value) in table.column(column)?.iter().enumerate() {
+                let problem = match Self::cell_problem(tag, value) {
+                    Some(problem) => problem,
+                    None => continue,
+                };
+
+                // The header occupies the first row of the sheet, so the first
+                // data row is row 2.
+                let mut location = format!(
+                    "{} (column \"{}\"), row {}",
+                    tag.as_literal_str(),
+                    column,
+                    index + 2
+                );
+
+                if let Some(invoice) = invoice_numbers.and_then(|numbers| numbers.get(index)) {
+                    location.push_str(&format!(", invoice \"{invoice}\""));
+                }
+
+                problems.push(format!("{}: \"{}\" {}", location, value, problem));
+            }
+        }
+
+        if problems.is_empty() {
+            return Ok(());
+        }
+
+        let total = problems.len();
+
+        let mut message = format!(
+            "{} cell{} in the file cannot be used:",
+            total,
+            match total == 1 {
+                true => "",
+                false => "s",
+            }
+        );
+
+        for problem in problems.iter().take(MAX_REPORTED) {
+            message.push_str(&format!("\n  • {problem}"));
+        }
+
+        if total > MAX_REPORTED {
+            message.push_str(&format!("\n  … and {} more", total - MAX_REPORTED));
+        }
+
+        message.push_str("\n\nCorrect these cells in the file, then upload it again.");
+
+        Err(message)
+    }
+
     fn write_no_attributes_open_close_tag_from_invoice(
         &mut self,
         tag: &Tags,
         mapping: &HashMap<String, TagMapping>,
         invoice: &Table,
     ) -> Result<(), String> {
-        let column_or_value = mapping.get(tag.as_hierarchical_str())
-            .ok_or(format!("No mapping found for tag '{}'", tag.as_literal_str()))?;
+        let content = Self::resolve_value(tag, mapping, invoice)?.to_string();
 
-        if let Some(c) = &column_or_value.mapped_column {
-            let content = invoice.get_first(c)?;
-            self.write_no_attributes_open_close_tag(tag, Some(content))?;
-        } else if let Some(v) = &column_or_value.default_value {
-            self.write_no_attributes_open_close_tag(
-                tag,
-                Some(v)
-            )?;
-        } else {
-            return Err(format!("Tag '{}' must have either a mapped column or a default value", tag.as_literal_str()));
-        }
-
-        Ok(())
+        self.write_no_attributes_open_close_tag(tag, Some(&content))
     }
 
     fn write_good_service_detail (
@@ -151,10 +339,24 @@ impl ConvertService {
                 ));
             }
 
+            // Derived amounts, computed before anything is written so the
+            // whole good/service is rejected on bad input rather than half
+            // emitted. Each one is fed the rounded value of the one before it,
+            // so the amounts in the document agree with each other.
+            let price = Self::resolve_amount(&Tags::Price, &mapping.mappings, &good_service)?;
+            let qty = Self::resolve_amount(&Tags::Qty, &mapping.mappings, &good_service)?;
+            let vat_rate = Self::resolve_amount(&Tags::VATRate, &mapping.mappings, &good_service)?;
+            let stlg_rate = Self::resolve_amount(&Tags::STLGRate, &mapping.mappings, &good_service)?;
+
+            let tax_base = formula::tax_base(price, qty);
+            let other_tax_base = formula::other_tax_base(tax_base);
+            let vat = formula::vat(other_tax_base, vat_rate);
+            let stlg = formula::stlg(other_tax_base, stlg_rate);
+
             self.xml_writer
                 .lock()
                 .map_err(
-                    |e| format!("Failed to acquire XML 
+                    |e| format!("Failed to acquire XML
                     Writer lock: {e}")
                 )?
                 .new_open_tag(
@@ -162,7 +364,7 @@ impl ConvertService {
                     &[],
                     None
                 );
-    
+
             self.write_good_service_detail(
                 &Tags::Opt,
                 &mapping.mappings,
@@ -205,42 +407,39 @@ impl ConvertService {
                 &good_service
             )?;
     
-            self.write_good_service_detail(
+            self.write_no_attributes_open_close_tag(
                 &Tags::TaxBase,
-                &mapping.mappings,
-                &good_service
+                Some(&formula::format_amount(tax_base))
             )?;
-    
-            self.write_good_service_detail(
+
+            self.write_no_attributes_open_close_tag(
                 &Tags::OtherTaxBase,
-                &mapping.mappings,
-                &good_service
+                Some(&formula::format_amount(other_tax_base))
             )?;
-    
+
             self.write_good_service_detail(
                 &Tags::VATRate,
                 &mapping.mappings,
                 &good_service
             )?;
-    
-            self.write_good_service_detail(
+
+            self.write_no_attributes_open_close_tag(
                 &Tags::VAT,
-                &mapping.mappings,
-                &good_service
+                Some(&formula::format_amount(vat))
             )?;
-    
+
             self.write_good_service_detail(
                 &Tags::STLGRate,
                 &mapping.mappings,
                 &good_service
             )?;
-    
-            self.write_good_service_detail(
+
+            self.write_no_attributes_open_close_tag(
                 &Tags::STLG,
-                &mapping.mappings,
-                &good_service
+                Some(&formula::format_amount(stlg))
             )?;
-    
+
+
             self.xml_writer
                 .lock()
                 .map_err(
@@ -279,6 +478,10 @@ impl ConvertUseCase for ConvertService {
 
         let mapping_map = &mapping.mappings;
 
+        // Vet the whole file up front so every unusable cell is reported at
+        // once, while rows can still be identified by their position.
+        Self::validate_cells(&table, &mapping)?;
+
         let invoices = table.group_by(&[mapping.invoice_number_column.to_string()])?;
 
         self.xml_writer
@@ -306,6 +509,8 @@ impl ConvertUseCase for ConvertService {
             Some(tin)
         )?;
 
+        let seller_idtku = formula::idtku(tin);
+
         self.xml_writer
         .lock()
             .map_err(
@@ -330,11 +535,18 @@ impl ConvertUseCase for ConvertService {
                     None
                 );
 
-            // <TaxInvoiceDate></TaxInvoiceDate>
-            self.write_no_attributes_open_close_tag_from_invoice(
+            // <TaxInvoiceDate></TaxInvoiceDate>, always ISO. A value that came
+            // from a real Excel date cell is already in this form; one typed as
+            // text is re-rendered so "2026-4-7" is padded to "2026-04-07".
+            let tax_invoice_date = Self::resolve_date(
                 &Tags::TaxInvoiceDate,
                 mapping_map,
-                &invoice,
+                &invoice
+            )?;
+
+            self.write_no_attributes_open_close_tag(
+                &Tags::TaxInvoiceDate,
+                Some(&tax_invoice_date)
             )?;
 
             // <TaxInvoiceOpt></TaxInvoiceOpt>
@@ -384,11 +596,11 @@ impl ConvertUseCase for ConvertService {
                 &invoice,
             )?;
 
-            // <SellerIDTKU></SellerIDTKU>
-            self.write_no_attributes_open_close_tag_from_invoice(
+            // <SellerIDTKU></SellerIDTKU>, derived from the seller's TIN and
+            // so the same on every invoice in the document.
+            self.write_no_attributes_open_close_tag(
                 &Tags::SellerIDTKU,
-                mapping_map,
-                &invoice,
+                Some(&seller_idtku)
             )?;
 
             // <BuyerTin></BuyerTin>
@@ -440,11 +652,14 @@ impl ConvertUseCase for ConvertService {
                 &invoice,
             )?;
 
-            // <BuyerIDTKU></BuyerIDTKU>
-            self.write_no_attributes_open_close_tag_from_invoice(
+            // <BuyerIDTKU></BuyerIDTKU>, derived from the buyer's TIN.
+            let buyer_idtku = formula::idtku(
+                Self::resolve_value(&Tags::BuyerTin, mapping_map, &invoice)?
+            );
+
+            self.write_no_attributes_open_close_tag(
                 &Tags::BuyerIDTKU,
-                mapping_map,
-                &invoice,
+                Some(&buyer_idtku)
             )?;
 
             // <ListOfGoodService>

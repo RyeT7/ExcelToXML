@@ -7,6 +7,8 @@ import { getHeaders, mapHeaders, convert, saveXml } from "../services/ParseServi
 export interface TagMapping {
   literal: string;
   hierarchical: string;
+  derived: boolean; // computed during conversion; not user-editable
+  formula: string | null; // shown in place of the inputs on derived tags
   mappedColumn: string | null; // Excel header name or null (use default value)
   defaultValue: string;
 }
@@ -88,6 +90,8 @@ async function uploadFile() {
       tagMappings.value = (Array.isArray(requiredTags) ? requiredTags : []).map((tag) => ({
         literal: tag.literal,
         hierarchical: tag.hierarchical,
+        derived: tag.derived,
+        formula: tag.formula,
         mappedColumn: null,
         defaultValue: "",
       }));

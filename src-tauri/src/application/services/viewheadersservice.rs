@@ -23,6 +23,8 @@ impl ViewHeadersUseCase for ViewHeadersService {
                 .map(|tag| TagDTO{
                     literal: tag.as_literal_str(),
                     hierarchical: tag.as_hierarchical_str(),
+                    derived: tag.is_derived(),
+                    formula: tag.formula(),
                 })
                 .collect()
         )

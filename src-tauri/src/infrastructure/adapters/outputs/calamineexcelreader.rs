@@ -1,12 +1,42 @@
 use calamine::{Data, Range, Reader, open_workbook_auto};
 
-use crate::{application::ports::outbound::excelreader::ExcelReader, domain::datastructures::table::Table};
+use crate::{
+    application::ports::outbound::excelreader::ExcelReader,
+    domain::{
+        datastructures::table::Table,
+        services::dates
+    }
+};
 
 pub struct CalamineExcelReader;
 
 impl CalamineExcelReader {
     pub fn new() -> Self {
         Self {  }
+    }
+
+    /// Renders a cell as the text the rest of the program works with.
+    ///
+    /// Date cells are the reason this is not just `to_string`. Excel stores a
+    /// date as a number carrying a date format, and `ExcelDateTime`'s own
+    /// `Display` writes that raw serial number — so a date cell used to arrive
+    /// as `46114`. Going through the cell's *type* recovers the day it stands
+    /// for, which also settles how the value was meant to be read: whatever
+    /// the sheet displays, Excel knows which part is the month.
+    fn cell_to_string(cell: &Data) -> String {
+        match cell {
+            Data::String(s) => s.to_string(),
+            Data::DateTime(d) => match d.as_datetime() {
+                Some(datetime) => dates::to_iso(datetime),
+                // A duration rather than a point in time; leave it for the
+                // tag that reads it to reject.
+                None => d.to_string(),
+            },
+            Data::DateTimeIso(s) => dates::normalize_timestamp(s),
+            Data::Float(f) => f.to_string(),
+            Data::Int(i) => i.to_string(),
+            _ => String::from("")
+        }
     }
 
     fn extract_header(range: &Range<Data>) -> Result<Vec<String>, String> {
@@ -20,15 +50,7 @@ impl CalamineExcelReader {
         let mut headers: Vec<String> = Vec::new();
 
         for cell in header_row.iter() {
-            let cell_value = match cell {
-                Data::String(s) => s.to_string(),
-                Data::DateTime(d) => d.to_string(),
-                Data::Float(f) => f.to_string(),
-                Data::Int(i) => i.to_string(),
-                _ => String::from("")
-            };
-
-            headers.push(cell_value);
+            headers.push(Self::cell_to_string(cell));
         }
 
         Ok(headers)
@@ -51,13 +73,7 @@ impl CalamineExcelReader {
                     },
                 };
 
-                let cell_value = match cell {
-                    Data::String(s) => s.to_string(),
-                    Data::DateTime(d) => d.to_string(),
-                    Data::Float(f) => f.to_string(),
-                    Data::Int(i) => i.to_string(),
-                    _ => String::from("")
-                };
+                let cell_value = Self::cell_to_string(cell);
 
                 match table.push(header, &cell_value) {
                     Ok(_) => {},

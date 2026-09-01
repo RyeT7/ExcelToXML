@@ -47,7 +47,14 @@ const {
       </button>
     </div>
 
-    <p v-if="conversionError" class="text-red-400 mt-3">{{ conversionError }}</p>
+    <!-- Validation reports list one line per bad cell, so keep the newlines
+         and let a long list scroll rather than push the page. -->
+    <p
+      v-if="conversionError"
+      class="text-red-400 mt-3 whitespace-pre-line max-h-64 overflow-auto text-sm"
+    >
+      {{ conversionError }}
+    </p>
     <p v-if="conversionSuccess" class="text-green-400 mt-3">
       Conversion successful! Click “Download XML” to choose where to save the file.
     </p>

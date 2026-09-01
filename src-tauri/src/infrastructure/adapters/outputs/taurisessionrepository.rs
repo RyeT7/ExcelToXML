@@ -9,10 +9,9 @@ use crate::{
     },
     domain::{
         datastructures::table::Table,
-        entities::tagmapping::{
-            TagMapping,
+        entities::tagmapping::
             TagMappings
-        }
+        
     }
 };
 

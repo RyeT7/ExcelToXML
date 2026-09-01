@@ -3,11 +3,15 @@ import { invoke } from "@tauri-apps/api/core";
 export interface TagDTO {
     literal: string;
     hierarchical: string;
+    derived: boolean;
+    formula: string | null;
 }
 
 export interface TagMapping {
     literal: string;
     hierarchical: string;
+    derived: boolean;
+    formula: string | null;
     mappedColumn: string | null;
     defaultValue: string;
 }
@@ -26,6 +30,9 @@ export async function mapHeaders(
     // hierarchical tag path, plus the two grouping columns.
     const tag_mappings: Record<string, { mapped_column: string | null; default_value: string | null }> = {};
     for (const m of tagMappings) {
+        // Derived tags are computed during conversion, so they carry no mapping.
+        if (m.derived) continue;
+
         tag_mappings[m.hierarchical] = {
             mapped_column: m.mappedColumn,
             default_value: m.defaultValue,

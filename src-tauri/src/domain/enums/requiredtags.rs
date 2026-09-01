@@ -117,6 +117,52 @@ impl Tags {
         }
     }
 
+    /// The formula a derived tag is computed from, or `None` for tags whose
+    /// value comes straight from the uploaded file.
+    ///
+    /// The text is what the mapping screen shows in place of the column
+    /// picker, so it names the tags it reads rather than their full paths.
+    pub fn formula(&self) -> Option<&'static str> {
+        match self {
+            Tags::SellerIDTKU => Some("TIN + \"000000\""),
+            Tags::BuyerIDTKU => Some("BuyerTin + \"000000\""),
+            Tags::TaxBase => Some("Price × Qty"),
+            Tags::OtherTaxBase => Some("(TaxBase × 11) ÷ 12"),
+            Tags::VAT => Some("(OtherTaxBase × VATRate) ÷ 100"),
+            Tags::STLG => Some("(OtherTaxBase × STLGRate) ÷ 100"),
+            _ => None,
+        }
+    }
+
+    /// Derived tags are computed during conversion, so they are never mapped
+    /// to a column and never take a default value.
+    pub fn is_derived(&self) -> bool {
+        self.formula().is_some()
+    }
+
+    /// Tags a formula reads as a number. Every cell behind one of these has to
+    /// parse, or the amounts computed from it would be wrong.
+    pub fn is_numeric(&self) -> bool {
+        matches!(self, Tags::Price | Tags::Qty | Tags::VATRate | Tags::STLGRate)
+    }
+
+    /// Tags that carry a date, written in ISO form.
+    pub fn is_date(&self) -> bool {
+        matches!(self, Tags::TaxInvoiceDate)
+    }
+
+    /// Whether an empty cell is a meaningful zero or a gap in the data.
+    ///
+    /// A rate the seller does not charge is reasonably left blank. A price or
+    /// quantity is not: reading those as zero would quietly put a zero-value
+    /// line into a tax document, so a blank one is reported instead.
+    pub fn blank_means_zero(&self) -> bool {
+        matches!(self, Tags::VATRate | Tags::STLGRate)
+    }
+
+    /// Every leaf tag the mapping screen lists. Derived tags stay in here so
+    /// they still appear in the tag tree, shown read-only alongside their
+    /// formula.
     pub const MAPPABLE: &'static [Tags] = &[
         Tags::TaxInvoiceDate,
         Tags::TaxInvoiceOpt,

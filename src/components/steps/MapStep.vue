@@ -73,6 +73,8 @@ const treeRows = computed<TreeRow[]>(() => {
     <h2 class="text-xl font-semibold text-gray-100 mb-1">Map Headers</h2>
     <p class="text-sm text-gray-400 mb-6">
       Choose the grouping columns and map each required tag to an Excel column or a default value.
+      Tags marked <span class="text-blue-300">Computed</span> are derived from the others during
+      conversion.
     </p>
 
     <div class="grid sm:grid-cols-3 gap-4 mb-6">
@@ -149,30 +151,48 @@ const treeRows = computed<TreeRow[]>(() => {
                 >{{ row.label }}</span
               >
             </td>
-            <td class="px-3 py-1.5 border-b border-gray-700/50 align-middle">
-              <select
-                v-if="row.mapping"
-                v-model="row.mapping.mappedColumn"
-                class="w-full border border-gray-600 bg-gray-900 text-gray-100 rounded p-1 transition-colors focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/30"
-              >
-                <option :value="null">-- Use default value --</option>
-                <option v-for="header in headers" :key="header" :value="header">
-                  {{ header }}
-                </option>
-              </select>
+            <!-- Derived tags are computed during conversion, so they show
+                 their formula in place of the two inputs. -->
+            <td
+              v-if="row.mapping?.derived"
+              colspan="2"
+              class="px-3 py-1.5 border-b border-gray-700/50 align-middle"
+            >
+              <span class="inline-flex items-center gap-2">
+                <span
+                  class="text-xs font-medium px-1.5 py-0.5 rounded bg-blue-500/15 text-blue-300 border border-blue-500/30"
+                >
+                  Computed
+                </span>
+                <code class="font-mono text-xs text-gray-400">{{ row.mapping.formula }}</code>
+              </span>
             </td>
-            <td class="px-3 py-1.5 border-b border-gray-700/50 align-middle">
-              <template v-if="row.mapping">
-                <input
-                  v-if="!row.mapping.mappedColumn"
-                  v-model="row.mapping.defaultValue"
-                  type="text"
-                  placeholder="Optional (empty allowed)"
+            <template v-else>
+              <td class="px-3 py-1.5 border-b border-gray-700/50 align-middle">
+                <select
+                  v-if="row.mapping"
+                  v-model="row.mapping.mappedColumn"
                   class="w-full border border-gray-600 bg-gray-900 text-gray-100 rounded p-1 transition-colors focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/30"
-                />
-                <span v-else class="text-gray-500">N/A</span>
-              </template>
-            </td>
+                >
+                  <option :value="null">-- Use default value --</option>
+                  <option v-for="header in headers" :key="header" :value="header">
+                    {{ header }}
+                  </option>
+                </select>
+              </td>
+              <td class="px-3 py-1.5 border-b border-gray-700/50 align-middle">
+                <template v-if="row.mapping">
+                  <input
+                    v-if="!row.mapping.mappedColumn"
+                    v-model="row.mapping.defaultValue"
+                    type="text"
+                    placeholder="Optional (empty allowed)"
+                    class="w-full border border-gray-600 bg-gray-900 text-gray-100 rounded p-1 transition-colors focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/30"
+                  />
+                  <span v-else class="text-gray-500">N/A</span>
+                </template>
+              </td>
+            </template>
           </tr>
         </tbody>
       </table>

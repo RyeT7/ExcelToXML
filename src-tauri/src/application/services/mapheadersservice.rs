@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::sync::Arc;
 
 use crate::application::ports::{
@@ -32,6 +32,12 @@ impl MapHeadersUseCase for MapHeadersService {
         let mapping_map = &mappings.tag_mappings;
 
         for tag in Tags::MAPPABLE {
+            // Derived tags are computed at conversion time, so the frontend
+            // sends no mapping for them and none is required here.
+            if tag.is_derived() {
+                continue;
+            }
+
             let mapping = mapping_map.get(tag.as_hierarchical_str())
                 .ok_or(format!("Missing mapping for tag '{}'", tag.as_literal_str()))?;
 
@@ -55,8 +61,17 @@ impl MapHeadersUseCase for MapHeadersService {
             }
         }
 
+        // Drop anything sent for a derived tag rather than storing it, so a
+        // stale value can never be mistaken for the computed one.
+        let derived_tags: HashSet<&str> = Tags::MAPPABLE
+            .iter()
+            .filter(|tag| tag.is_derived())
+            .map(|tag| tag.as_hierarchical_str())
+            .collect();
+
         let domain_mappings: HashMap<String, TagMapping> = mapping_map
             .iter()
+            .filter(|(k, _)| !derived_tags.contains(k.as_str()))
             .map(|(k, m)| (k.clone(), TagMapping::new(
                 m.mapped_column.clone(),
                 m.default_value.clone(),
