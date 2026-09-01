@@ -168,18 +168,17 @@ impl XMLWriter for CustomXMLWriter {
     ///
     /// # Examples
     /// ```
-    /// extern crate exceltoxml_lib;
+    /// use exceltoxml_lib::application::ports::outbound::xmlwriter::XMLWriter;
+    /// use exceltoxml_lib::infrastructure::adapters::outputs::customxmlwriter::CustomXMLWriter;
     ///
-    /// use exceltoxml_lib::xml::writer::{XMLWriter, XMLWriterTrait};
-    ///
-    /// let mut xml_writer = XMLWriter::new();
+    /// let mut xml_writer = CustomXMLWriter::new();
     ///
     /// xml_writer.new_open_close_tag("Tag", &[], None);
     ///
     /// xml_writer.new_open_close_tag("Tag", &[], Some("content"));
     ///
     /// assert_eq!(
-    ///     xml_writer.get_xml(),
+    ///     xml_writer.take_xml(),
     ///     "<Tag />\n<Tag>content</Tag>\n"
     /// );
     ///
