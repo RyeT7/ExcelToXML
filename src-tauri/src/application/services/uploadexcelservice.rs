@@ -2,10 +2,7 @@ use std::sync::Arc;
 
 use crate::application::ports::{
     inbound::uploadexcelusecase::UploadExcelUseCase,
-    outbound::{
-        excelreader::ExcelReader,
-        sessionrepository::SessionRepository
-    }
+    outbound::{excelreader::ExcelReader, sessionrepository::SessionRepository},
 };
 
 pub struct UploadExcelService {
@@ -26,11 +23,7 @@ impl UploadExcelService {
 }
 
 impl UploadExcelUseCase for UploadExcelService {
-    fn load_excel(
-        &self,
-        session_id: &str,
-        path: &str
-    ) -> Result<(), String> {
+    fn load_excel(&self, session_id: &str, path: &str) -> Result<(), String> {
         let table = self.reader.load_excel(path)?;
 
         let mut session = self.session_repository.get(session_id)?;

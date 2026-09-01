@@ -1,18 +1,15 @@
-use calamine::{Data, Range, Reader, open_workbook_auto};
+use calamine::{open_workbook_auto, Data, Range, Reader};
 
 use crate::{
     application::ports::outbound::excelreader::ExcelReader,
-    domain::{
-        datastructures::table::Table,
-        services::dates
-    }
+    domain::{datastructures::table::Table, services::dates},
 };
 
 pub struct CalamineExcelReader;
 
 impl CalamineExcelReader {
     pub fn new() -> Self {
-        Self {  }
+        Self {}
     }
 
     /// Renders a cell as the text the rest of the program works with.
@@ -35,16 +32,14 @@ impl CalamineExcelReader {
             Data::DateTimeIso(s) => dates::normalize_timestamp(s),
             Data::Float(f) => f.to_string(),
             Data::Int(i) => i.to_string(),
-            _ => String::from("")
+            _ => String::from(""),
         }
     }
 
     fn extract_header(range: &Range<Data>) -> Result<Vec<String>, String> {
         let header_row = match range.rows().into_iter().next() {
             Some(r) => r,
-            None => {
-                return Err("Header rows not found".to_string())
-            }
+            None => return Err("Header rows not found".to_string()),
         };
 
         let mut headers: Vec<String> = Vec::new();
@@ -56,10 +51,7 @@ impl CalamineExcelReader {
         Ok(headers)
     }
 
-    fn read_excel(
-        header: &Vec<String>,
-        range: &Range<Data>
-    ) -> Result<Table, String> {
+    fn read_excel(header: &Vec<String>, range: &Range<Data>) -> Result<Table, String> {
         let mut table = Table::new(header)?;
 
         for row in range.rows().skip(1) {
@@ -67,19 +59,17 @@ impl CalamineExcelReader {
                 let header = match header.get(col_idx) {
                     Some(h) => h,
                     None => {
-                        return Err(
-                            format!("Column {} is missing", col_idx)
-                        );
-                    },
+                        return Err(format!("Column {} is missing", col_idx));
+                    }
                 };
 
                 let cell_value = Self::cell_to_string(cell);
 
                 match table.push(header, &cell_value) {
-                    Ok(_) => {},
+                    Ok(_) => {}
                     Err(e) => {
                         return Err(e);
-                    },
+                    }
                 };
             }
         }
@@ -97,10 +87,8 @@ impl ExcelReader for CalamineExcelReader {
                 Some(Ok(range)) => range,
                 Some(Err(_)) => {
                     return Err("Something went wrong: sheet not found in workbook".to_string())
-                },
-                None => {
-                    return Err("There are no sheets on this workbook".to_string())
                 }
+                None => return Err("There are no sheets on this workbook".to_string()),
             },
             Err(_) => {
                 return Err("Workbook does not exist".to_string());

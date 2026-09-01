@@ -43,23 +43,23 @@ fn derived_amounts_match_integer_cent_arithmetic() {
                 let expected_vat = div_round(expected_other * rate, 100);
 
                 // The real implementation.
-                let tax_base = formula::tax_base(
-                    Decimal::from(price),
-                    Decimal::from(qty)
-                );
+                let tax_base = formula::tax_base(Decimal::from(price), Decimal::from(qty));
                 let other_tax_base = formula::other_tax_base(tax_base);
                 let vat = formula::vat(other_tax_base, Decimal::from(rate));
 
                 assert_eq!(
-                    cents(tax_base), expected_tax_base,
+                    cents(tax_base),
+                    expected_tax_base,
                     "TaxBase for price={price} qty={qty}"
                 );
                 assert_eq!(
-                    cents(other_tax_base), expected_other,
+                    cents(other_tax_base),
+                    expected_other,
                     "OtherTaxBase for price={price} qty={qty}"
                 );
                 assert_eq!(
-                    cents(vat), expected_vat,
+                    cents(vat),
+                    expected_vat,
                     "VAT for price={price} qty={qty} rate={rate}%"
                 );
             }

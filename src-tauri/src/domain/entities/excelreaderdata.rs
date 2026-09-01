@@ -14,12 +14,12 @@ impl ExcelReaderData {
         path: String,
         range: Range<Data>,
         table: Table,
-        header: Vec<String>
+        header: Vec<String>,
     ) -> ExcelReaderData {
         ExcelReaderData {
-            path:   path,
-            range:  range,
-            table:  table,
+            path: path,
+            range: range,
+            table: table,
             header: header,
         }
     }

@@ -1,22 +1,19 @@
 use std::collections::{HashMap, HashSet};
 use std::sync::Arc;
 
+use crate::application::dto::request::tagmappingdto::TagMappingsDTO;
 use crate::application::ports::{
-    inbound::mapheadersusecase::MapHeadersUseCase,
-    outbound::sessionrepository::SessionRepository
+    inbound::mapheadersusecase::MapHeadersUseCase, outbound::sessionrepository::SessionRepository,
 };
-use crate::application::dto::request::tagmappingdto::{TagMappingsDTO};
-use crate::domain::enums::requiredtags::Tags;
 use crate::domain::entities::tagmapping::{TagMapping, TagMappings};
+use crate::domain::enums::requiredtags::Tags;
 
 pub struct MapHeadersService {
     session_repository: Arc<dyn SessionRepository>,
 }
 
 impl MapHeadersService {
-    pub fn new (
-        session_repository: Arc<dyn SessionRepository>,
-    ) -> Self {
+    pub fn new(session_repository: Arc<dyn SessionRepository>) -> Self {
         Self {
             session_repository: session_repository,
         }
@@ -26,8 +23,7 @@ impl MapHeadersService {
 impl MapHeadersUseCase for MapHeadersService {
     fn map_headers(&self, session_id: &str, mappings: &TagMappingsDTO) -> Result<(), String> {
         let mut session = self.session_repository.get(session_id)?;
-        let table = session.table.as_ref()
-            .ok_or("No table found in session")?;
+        let table = session.table.as_ref().ok_or("No table found in session")?;
 
         let mapping_map = &mappings.tag_mappings;
 
@@ -38,8 +34,10 @@ impl MapHeadersUseCase for MapHeadersService {
                 continue;
             }
 
-            let mapping = mapping_map.get(tag.as_hierarchical_str())
-                .ok_or(format!("Missing mapping for tag '{}'", tag.as_literal_str()))?;
+            let mapping = mapping_map.get(tag.as_hierarchical_str()).ok_or(format!(
+                "Missing mapping for tag '{}'",
+                tag.as_literal_str()
+            ))?;
 
             let has_column = mapping.mapped_column.is_some();
             let has_default = mapping.default_value.is_some();
@@ -53,10 +51,7 @@ impl MapHeadersUseCase for MapHeadersService {
 
             if let Some(column) = &mapping.mapped_column {
                 if !column.is_empty() && !table.headers().contains(column) {
-                    return Err(format!(
-                        "Column '{}' not found in uploaded file",
-                        column
-                    ));
+                    return Err(format!("Column '{}' not found in uploaded file", column));
                 }
             }
         }
@@ -72,10 +67,12 @@ impl MapHeadersUseCase for MapHeadersService {
         let domain_mappings: HashMap<String, TagMapping> = mapping_map
             .iter()
             .filter(|(k, _)| !derived_tags.contains(k.as_str()))
-            .map(|(k, m)| (k.clone(), TagMapping::new(
-                m.mapped_column.clone(),
-                m.default_value.clone(),
-            )))
+            .map(|(k, m)| {
+                (
+                    k.clone(),
+                    TagMapping::new(m.mapped_column.clone(), m.default_value.clone()),
+                )
+            })
             .collect();
 
         let domain_mapping_all: TagMappings = TagMappings {

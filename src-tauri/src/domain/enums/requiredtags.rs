@@ -54,7 +54,9 @@ impl Tags {
             Tags::BuyerTin => "TaxInvoiceBulk.ListOfTaxInvoice.TaxInvoice.BuyerTin",
             Tags::BuyerDocument => "TaxInvoiceBulk.ListOfTaxInvoice.TaxInvoice.BuyerDocument",
             Tags::BuyerCountry => "TaxInvoiceBulk.ListOfTaxInvoice.TaxInvoice.BuyerCountry",
-            Tags::BuyerDocumentNumber => "TaxInvoiceBulk.ListOfTaxInvoice.TaxInvoice.BuyerDocumentNumber",
+            Tags::BuyerDocumentNumber => {
+                "TaxInvoiceBulk.ListOfTaxInvoice.TaxInvoice.BuyerDocumentNumber"
+            }
             Tags::BuyerName => "TaxInvoiceBulk.ListOfTaxInvoice.TaxInvoice.BuyerName",
             Tags::BuyerAddress => "TaxInvoiceBulk.ListOfTaxInvoice.TaxInvoice.BuyerAddress",
             Tags::BuyerEmail => "TaxInvoiceBulk.ListOfTaxInvoice.TaxInvoice.BuyerEmail",
@@ -67,12 +69,22 @@ impl Tags {
             Tags::Unit => "TaxInvoiceBulk.ListOfTaxInvoice.ListOfGoodService.GoodService.Unit",
             Tags::Price => "TaxInvoiceBulk.ListOfTaxInvoice.ListOfGoodService.GoodService.Price",
             Tags::Qty => "TaxInvoiceBulk.ListOfTaxInvoice.ListOfGoodService.GoodService.Qty",
-            Tags::TotalDiscount => "TaxInvoiceBulk.ListOfTaxInvoice.ListOfGoodService.GoodService.TotalDiscount",
-            Tags::TaxBase => "TaxInvoiceBulk.ListOfTaxInvoice.ListOfGoodService.GoodService.TaxBase",
-            Tags::OtherTaxBase => "TaxInvoiceBulk.ListOfTaxInvoice.ListOfGoodService.GoodService.OtherTaxBase",
-            Tags::VATRate => "TaxInvoiceBulk.ListOfTaxInvoice.ListOfGoodService.GoodService.VATRate",
+            Tags::TotalDiscount => {
+                "TaxInvoiceBulk.ListOfTaxInvoice.ListOfGoodService.GoodService.TotalDiscount"
+            }
+            Tags::TaxBase => {
+                "TaxInvoiceBulk.ListOfTaxInvoice.ListOfGoodService.GoodService.TaxBase"
+            }
+            Tags::OtherTaxBase => {
+                "TaxInvoiceBulk.ListOfTaxInvoice.ListOfGoodService.GoodService.OtherTaxBase"
+            }
+            Tags::VATRate => {
+                "TaxInvoiceBulk.ListOfTaxInvoice.ListOfGoodService.GoodService.VATRate"
+            }
             Tags::VAT => "TaxInvoiceBulk.ListOfTaxInvoice.ListOfGoodService.GoodService.VAT",
-            Tags::STLGRate => "TaxInvoiceBulk.ListOfTaxInvoice.ListOfGoodService.GoodService.STLGRate",
+            Tags::STLGRate => {
+                "TaxInvoiceBulk.ListOfTaxInvoice.ListOfGoodService.GoodService.STLGRate"
+            }
             Tags::STLG => "TaxInvoiceBulk.ListOfTaxInvoice.ListOfGoodService.GoodService.STLG",
         }
     }
@@ -143,7 +155,10 @@ impl Tags {
     /// Tags a formula reads as a number. Every cell behind one of these has to
     /// parse, or the amounts computed from it would be wrong.
     pub fn is_numeric(&self) -> bool {
-        matches!(self, Tags::Price | Tags::Qty | Tags::VATRate | Tags::STLGRate)
+        matches!(
+            self,
+            Tags::Price | Tags::Qty | Tags::VATRate | Tags::STLGRate
+        )
     }
 
     /// Tags that carry a date, written in ISO form.
@@ -192,6 +207,6 @@ impl Tags {
         Tags::VATRate,
         Tags::VAT,
         Tags::STLGRate,
-        Tags::STLG
+        Tags::STLG,
     ];
 }

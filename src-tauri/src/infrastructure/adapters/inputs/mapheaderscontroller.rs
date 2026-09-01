@@ -1,9 +1,6 @@
 use tauri::State;
 
-use crate::{
-    application::dto::request::tagmappingdto::TagMappingsDTO,
-    state::appstate::AppState
-};
+use crate::{application::dto::request::tagmappingdto::TagMappingsDTO, state::appstate::AppState};
 
 #[tauri::command]
 pub async fn map_headers(

@@ -7,7 +7,10 @@ use exceltoxml_lib::domain::services::dates;
 
 #[test]
 fn iso_values_are_accepted() {
-    assert_eq!(dates::normalize("2026-04-07").as_deref(), Some("2026-04-07"));
+    assert_eq!(
+        dates::normalize("2026-04-07").as_deref(),
+        Some("2026-04-07")
+    );
 }
 
 #[test]
@@ -18,7 +21,10 @@ fn unpadded_iso_values_are_canonicalised() {
 
 #[test]
 fn surrounding_whitespace_is_tolerated() {
-    assert_eq!(dates::normalize("  2026-04-07 ").as_deref(), Some("2026-04-07"));
+    assert_eq!(
+        dates::normalize("  2026-04-07 ").as_deref(),
+        Some("2026-04-07")
+    );
 }
 
 #[test]
@@ -38,7 +44,10 @@ fn ambiguous_text_dates_are_refused() {
 
 #[test]
 fn iso_timestamps_are_reduced_to_their_date() {
-    assert_eq!(dates::normalize_timestamp("2026-04-07T00:00:00"), "2026-04-07");
+    assert_eq!(
+        dates::normalize_timestamp("2026-04-07T00:00:00"),
+        "2026-04-07"
+    );
     assert_eq!(dates::normalize_timestamp("2026-04-07"), "2026-04-07");
 }
 
@@ -56,7 +65,7 @@ fn an_excel_date_cell_becomes_an_iso_date_not_a_serial_number() {
     let cell = Data::DateTime(ExcelDateTime::new(
         46114.0,
         ExcelDateTimeType::DateTime,
-        false
+        false,
     ));
 
     // What the old code wrote straight into <TaxInvoiceDate>.

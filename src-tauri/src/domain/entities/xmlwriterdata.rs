@@ -7,9 +7,9 @@ pub struct XMLWriterData<'a> {
 impl<'a> XMLWriterData<'a> {
     pub fn new() -> XMLWriterData<'a> {
         XMLWriterData {
-            xml             : String::new(),
-            last_padding    : 0,
-            tags            : Vec::new(),
+            xml: String::new(),
+            last_padding: 0,
+            tags: Vec::new(),
         }
     }
 

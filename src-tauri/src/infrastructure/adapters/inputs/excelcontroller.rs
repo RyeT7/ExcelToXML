@@ -8,17 +8,10 @@ pub async fn load_excel(
     session_id: String,
     path: String,
 ) -> Result<(), String> {
-    state
-        .upload_excel_use_case
-        .load_excel(&session_id, &path)
+    state.upload_excel_use_case.load_excel(&session_id, &path)
 }
 
 #[tauri::command]
-pub async fn view_excel(
-    state: State<'_, AppState>,
-    session_id: String,
-) -> Result<Table, String> {
-    state
-        .view_excel_use_case
-        .view_excel(&session_id)
+pub async fn view_excel(state: State<'_, AppState>, session_id: String) -> Result<Table, String> {
+    state.view_excel_use_case.view_excel(&session_id)
 }

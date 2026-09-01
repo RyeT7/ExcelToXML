@@ -1,6 +1,5 @@
 use crate::{
-    application::ports::outbound::xmlwriter::XMLWriter,
-    domain::enums::xmlattributes::XMLAttributes
+    application::ports::outbound::xmlwriter::XMLWriter, domain::enums::xmlattributes::XMLAttributes,
 };
 
 pub struct CustomXMLWriter {
@@ -12,9 +11,9 @@ pub struct CustomXMLWriter {
 impl CustomXMLWriter {
     pub fn new() -> Self {
         Self {
-            xml             : String::new(),
-            last_padding    : 0,
-            tags            : Vec::new(),
+            xml: String::new(),
+            last_padding: 0,
+            tags: Vec::new(),
         }
     }
 
@@ -29,53 +28,46 @@ impl CustomXMLWriter {
         Self::escape_markup(value).replace('"', "&quot;")
     }
 
-    fn create_open_tag(
-        &mut self,
-        tag_name: &str,
-        attributes: &[XMLAttributes]
-    ) {
+    fn create_open_tag(&mut self, tag_name: &str, attributes: &[XMLAttributes]) {
         self.left_pad();
         self.xml.push('<');
         self.xml.push_str(tag_name);
-    
+
         for attr in attributes {
-            self.xml.push_str(
-                &format!(" {}=\"{}\"", attr.attribute_name, attr.attribute_value)
-            );
+            self.xml.push_str(&format!(
+                " {}=\"{}\"",
+                attr.attribute_name, attr.attribute_value
+            ));
         }
-    
+
         self.xml.push('>');
-    
+
         self.xml.push('\n');
     }
-    
+
     fn add_content(&mut self, content: Option<&str>) {
         if let Some(c) = content {
             self.left_pad();
 
             let normalized_content = self.escape_characters(c);
 
-            self.xml.push_str(
-                &normalized_content
-            );
+            self.xml.push_str(&normalized_content);
 
             self.xml.push('\n');
         }
     }
-    
+
     fn left_pad(&mut self) {
-        self.xml.push_str(
-            &"   ".repeat(self.last_padding)
-        );
+        self.xml.push_str(&"   ".repeat(self.last_padding));
     }
 
     fn create_close_tag(&mut self, tag_name: &str) {
         self.left_pad();
         self.xml.push_str("</");
         self.xml.push_str(tag_name);
-    
+
         self.xml.push('>');
-    
+
         self.xml.push('\n');
     }
 
@@ -88,7 +80,7 @@ impl CustomXMLWriter {
         &mut self,
         tag_name: &str,
         attributes: &[XMLAttributes],
-        content: Option<&str>
+        content: Option<&str>,
     ) {
         self.left_pad();
         self.xml.push('<');
@@ -96,28 +88,23 @@ impl CustomXMLWriter {
 
         if attributes.len() > 0 {
             for attr in attributes {
-                self.xml.push_str(
-                    &format!(
-                        " {}=\"{}\"",
-                        attr.attribute_name,
-                        Self::escape_attribute(&attr.attribute_value)
-                    )
-                );
+                self.xml.push_str(&format!(
+                    " {}=\"{}\"",
+                    attr.attribute_name,
+                    Self::escape_attribute(&attr.attribute_value)
+                ));
             }
         }
 
         match content {
             Some(c) => {
                 let normalized_content = self.escape_characters(c);
-                self.xml.push_str(
-                    &format!(">{}</{}>\n", normalized_content, tag_name)
-                );
-            },
+                self.xml
+                    .push_str(&format!(">{}</{}>\n", normalized_content, tag_name));
+            }
             None => {
-                self.xml.push_str(
-                    &format!("></{}>\n", tag_name)
-                );
-            },
+                self.xml.push_str(&format!("></{}>\n", tag_name));
+            }
         }
     }
 }
@@ -127,16 +114,16 @@ impl XMLWriter for CustomXMLWriter {
         &mut self,
         tag_name: &str,
         attributes: &[XMLAttributes],
-        content: Option<&str>
+        content: Option<&str>,
     ) {
         self.create_open_tag(tag_name, attributes);
         self.add_content(content);
 
         self.tags.push(tag_name.to_string());
-        
+
         self.last_padding += 1;
     }
-    
+
     fn escape_characters(&mut self, content: &str) -> String {
         Self::escape_markup(content)
     }
@@ -146,7 +133,7 @@ impl XMLWriter for CustomXMLWriter {
 
         if let Some(t) = self.tags.pop() {
             self.create_close_tag(&t);
-            return Ok(())
+            return Ok(());
         } else {
             return Err("Invalid format: Close called too early".to_string());
         }
@@ -169,33 +156,33 @@ impl XMLWriter for CustomXMLWriter {
     /// This function can either create an immediate open and close tag
     /// or it could create a self closing tag depending on what your
     /// content is.
-    /// 
+    ///
     /// A non-empty string will get you an open tag, however, None or an
     /// empty string will produce a self closing tag.
-    /// 
+    ///
     /// # Examples
     /// ```
     /// extern crate exceltoxml_lib;
-    /// 
+    ///
     /// use exceltoxml_lib::xml::writer::{XMLWriter, XMLWriterTrait};
-    /// 
+    ///
     /// let mut xml_writer = XMLWriter::new();
-    /// 
+    ///
     /// xml_writer.new_open_close_tag("Tag", &[], None);
-    /// 
+    ///
     /// xml_writer.new_open_close_tag("Tag", &[], Some("content"));
-    /// 
+    ///
     /// assert_eq!(
     ///     xml_writer.get_xml(),
     ///     "<Tag />\n<Tag>content</Tag>\n"
     /// );
-    /// 
+    ///
     /// ```
     fn new_open_close_tag(
         &mut self,
         tag_name: &str,
         attributes: &[XMLAttributes],
-        content: Option<&str>
+        content: Option<&str>,
     ) {
         if content.is_some_and(|c| !c.is_empty()) {
             self.create_one_line_open_close_tag(tag_name, attributes, content);
@@ -205,15 +192,7 @@ impl XMLWriter for CustomXMLWriter {
         self.create_self_closing_tag(tag_name);
     }
 
-    fn new_open_close_tag_no_attributes(
-        &mut self,
-        tag_name: &str,
-        content: Option<&str>
-    ) {
-        self.new_open_close_tag(
-            tag_name,
-            &[],
-            content
-        );
+    fn new_open_close_tag_no_attributes(&mut self, tag_name: &str, content: Option<&str>) {
+        self.new_open_close_tag(tag_name, &[], content);
     }
 }

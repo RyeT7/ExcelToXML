@@ -3,27 +3,25 @@
 
 use std::{
     collections::HashMap,
-    sync::{Arc, Mutex}
+    sync::{Arc, Mutex},
 };
 
 use exceltoxml_lib::{
     application::{
         ports::{
-            inbound::convertusecase::ConvertUseCase,
-            outbound::sessionrepository::SessionRepository
+            inbound::convertusecase::ConvertUseCase, outbound::sessionrepository::SessionRepository,
         },
         services::convertservice::ConvertService,
-        session::session::Session
+        session::session::Session,
     },
     domain::{
         datastructures::table::Table,
         entities::tagmapping::{TagMapping, TagMappings},
-        enums::requiredtags::Tags
+        enums::requiredtags::Tags,
     },
     infrastructure::adapters::outputs::{
-        customxmlwriter::CustomXMLWriter,
-        taurisessionrepository::TauriSessionRepository
-    }
+        customxmlwriter::CustomXMLWriter, taurisessionrepository::TauriSessionRepository,
+    },
 };
 
 const SESSION_ID: &str = "test-session";
@@ -69,22 +67,30 @@ fn sample_mappings() -> TagMappings {
     let mut mappings: HashMap<String, TagMapping> = Tags::MAPPABLE
         .iter()
         .filter(|tag| !tag.is_derived())
-        .map(|tag| (
-            tag.as_hierarchical_str().to_string(),
-            TagMapping::new(None, Some(String::new()))
-        ))
+        .map(|tag| {
+            (
+                tag.as_hierarchical_str().to_string(),
+                TagMapping::new(None, Some(String::new())),
+            )
+        })
         .collect();
 
-    for tag in [Tags::BuyerTin, Tags::Price, Tags::Qty, Tags::VATRate, Tags::STLGRate] {
+    for tag in [
+        Tags::BuyerTin,
+        Tags::Price,
+        Tags::Qty,
+        Tags::VATRate,
+        Tags::STLGRate,
+    ] {
         mappings.insert(
             tag.as_hierarchical_str().to_string(),
-            TagMapping::new(Some(tag.as_literal_str().to_string()), None)
+            TagMapping::new(Some(tag.as_literal_str().to_string()), None),
         );
     }
 
     mappings.insert(
         Tags::TaxInvoiceDate.as_hierarchical_str().to_string(),
-        TagMapping::new(Some("Date".to_string()), None)
+        TagMapping::new(Some("Date".to_string()), None),
     );
 
     TagMappings {
@@ -97,11 +103,16 @@ fn sample_mappings() -> TagMappings {
 fn session_with(table: Table) -> Arc<TauriSessionRepository> {
     let session_repository = Arc::new(TauriSessionRepository::new());
 
-    session_repository.insert(SESSION_ID, Session {
-        table: Some(table),
-        xml: None,
-        tag_mappings: Some(sample_mappings()),
-    }).unwrap();
+    session_repository
+        .insert(
+            SESSION_ID,
+            Session {
+                table: Some(table),
+                xml: None,
+                tag_mappings: Some(sample_mappings()),
+            },
+        )
+        .unwrap();
 
     session_repository
 }
@@ -109,8 +120,9 @@ fn session_with(table: Table) -> Arc<TauriSessionRepository> {
 fn convert(session_repository: Arc<TauriSessionRepository>) -> Result<(), String> {
     ConvertService::new(
         session_repository,
-        Arc::new(Mutex::new(CustomXMLWriter::new()))
-    ).convert(SESSION_ID, TIN)
+        Arc::new(Mutex::new(CustomXMLWriter::new())),
+    )
+    .convert(SESSION_ID, TIN)
 }
 
 fn convert_sample() -> String {
@@ -132,7 +144,10 @@ fn buyer_idtku_is_derived_from_the_buyer_tin() {
 fn dates_are_written_in_iso_form() {
     let xml = convert_sample();
 
-    assert!(xml.contains("<TaxInvoiceDate>2026-04-07</TaxInvoiceDate>"), "{xml}");
+    assert!(
+        xml.contains("<TaxInvoiceDate>2026-04-07</TaxInvoiceDate>"),
+        "{xml}"
+    );
 }
 
 #[test]
@@ -142,16 +157,21 @@ fn an_unpadded_date_is_canonicalised_on_the_way_out() {
     convert(repository.clone()).unwrap();
 
     let xml = repository.get(SESSION_ID).unwrap().xml.unwrap();
-    assert!(xml.contains("<TaxInvoiceDate>2026-04-07</TaxInvoiceDate>"), "{xml}");
+    assert!(
+        xml.contains("<TaxInvoiceDate>2026-04-07</TaxInvoiceDate>"),
+        "{xml}"
+    );
 }
 
 /// Text Excel never understood as a date has an unknowable day/month order, so
 /// it is refused rather than guessed at.
 #[test]
 fn an_ambiguous_text_date_is_refused_with_its_location() {
-    let error = convert(session_with(
-        with_column("Date", ["07/04/2026", "2026-04-07"])
-    )).unwrap_err();
+    let error = convert(session_with(with_column(
+        "Date",
+        ["07/04/2026", "2026-04-07"],
+    )))
+    .unwrap_err();
 
     assert!(error.contains("TaxInvoiceDate"), "{error}");
     assert!(error.contains("07/04/2026"), "{error}");
@@ -161,18 +181,26 @@ fn an_ambiguous_text_date_is_refused_with_its_location() {
 
 #[test]
 fn an_impossible_date_is_refused() {
-    let error = convert(session_with(
-        with_column("Date", ["2026-02-30", "2026-04-07"])
-    )).unwrap_err();
+    let error = convert(session_with(with_column(
+        "Date",
+        ["2026-02-30", "2026-04-07"],
+    )))
+    .unwrap_err();
 
-    assert!(error.contains("TaxInvoiceDate") && error.contains("2026-02-30"), "{error}");
+    assert!(
+        error.contains("TaxInvoiceDate") && error.contains("2026-02-30"),
+        "{error}"
+    );
 }
 
 #[test]
 fn a_missing_date_is_refused() {
     let error = convert(session_with(with_column("Date", ["", "2026-04-07"]))).unwrap_err();
 
-    assert!(error.contains("TaxInvoiceDate") && error.contains("is empty"), "{error}");
+    assert!(
+        error.contains("TaxInvoiceDate") && error.contains("is empty"),
+        "{error}"
+    );
 }
 
 #[test]
@@ -180,7 +208,10 @@ fn seller_idtku_is_derived_from_the_document_tin() {
     let xml = convert_sample();
 
     assert!(xml.contains(&format!("<TIN>{TIN}</TIN>")), "{xml}");
-    assert!(xml.contains("<SellerIDTKU>12123123000000</SellerIDTKU>"), "{xml}");
+    assert!(
+        xml.contains("<SellerIDTKU>12123123000000</SellerIDTKU>"),
+        "{xml}"
+    );
 }
 
 #[test]
@@ -214,7 +245,7 @@ fn with_column(column: &str, values: [&str; 2]) -> Table {
 
     table.data.insert(
         column.to_string(),
-        values.iter().map(|value| value.to_string()).collect()
+        values.iter().map(|value| value.to_string()).collect(),
     );
 
     table
@@ -242,12 +273,15 @@ fn every_bad_cell_is_reported_in_one_pass() {
     let mut table = with_column("Qty", ["n/a", "3"]);
     table.data.insert(
         "Price".to_string(),
-        vec!["100000".to_string(), "TBD".to_string()]
+        vec!["100000".to_string(), "TBD".to_string()],
     );
 
     let error = convert(session_with(table)).unwrap_err();
 
-    assert!(error.starts_with("2 cells in the file cannot be used"), "{error}");
+    assert!(
+        error.starts_with("2 cells in the file cannot be used"),
+        "{error}"
+    );
     assert!(error.contains("Qty") && error.contains("n/a"), "{error}");
     assert!(error.contains("Price") && error.contains("TBD"), "{error}");
 }
@@ -258,11 +292,11 @@ fn preview_report() {
     let mut table = with_column("Qty", ["n/a", ""]);
     table.data.insert(
         "Price".to_string(),
-        vec!["Rp 100.000".to_string(), "1500.5".to_string()]
+        vec!["Rp 100.000".to_string(), "1500.5".to_string()],
     );
     table.data.insert(
         "VATRate".to_string(),
-        vec!["12%".to_string(), "11".to_string()]
+        vec!["12%".to_string(), "11".to_string()],
     );
 
     println!("\n{}\n", convert(session_with(table)).unwrap_err());
@@ -294,7 +328,10 @@ fn blank_rates_are_allowed_but_blank_prices_are_not() {
 
     let error = convert(session_with(with_column("Qty", ["30", ""]))).unwrap_err();
 
-    assert!(error.contains("Qty") && error.contains("is empty"), "{error}");
+    assert!(
+        error.contains("Qty") && error.contains("is empty"),
+        "{error}"
+    );
 }
 
 #[test]
@@ -304,14 +341,19 @@ fn a_non_numeric_default_value_is_reported_without_a_row() {
     let mut tag_mappings = sample_mappings();
     tag_mappings.mappings.insert(
         Tags::VATRate.as_hierarchical_str().to_string(),
-        TagMapping::new(None, Some("twelve".to_string()))
+        TagMapping::new(None, Some("twelve".to_string())),
     );
 
-    session_repository.insert(SESSION_ID, Session {
-        table: Some(sample_table()),
-        xml: None,
-        tag_mappings: Some(tag_mappings),
-    }).unwrap();
+    session_repository
+        .insert(
+            SESSION_ID,
+            Session {
+                table: Some(sample_table()),
+                xml: None,
+                tag_mappings: Some(tag_mappings),
+            },
+        )
+        .unwrap();
 
     let error = convert(session_repository).unwrap_err();
 

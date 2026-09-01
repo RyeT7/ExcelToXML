@@ -1,19 +1,10 @@
-use std::{
-    collections::HashMap,
-    sync::RwLock
-};
 use crate::{
     application::{
-        ports::outbound::sessionrepository::SessionRepository,
-        session::session::Session
+        ports::outbound::sessionrepository::SessionRepository, session::session::Session,
     },
-    domain::{
-        datastructures::table::Table,
-        entities::tagmapping::
-            TagMappings
-        
-    }
+    domain::{datastructures::table::Table, entities::tagmapping::TagMappings},
 };
+use std::{collections::HashMap, sync::RwLock};
 
 pub struct TauriSessionRepository {
     sessions: RwLock<HashMap<String, Session>>,
@@ -21,7 +12,9 @@ pub struct TauriSessionRepository {
 
 impl TauriSessionRepository {
     pub fn new() -> Self {
-        TauriSessionRepository { sessions: RwLock::new(HashMap::new()) }
+        TauriSessionRepository {
+            sessions: RwLock::new(HashMap::new()),
+        }
     }
 }
 
@@ -38,27 +31,23 @@ impl SessionRepository for TauriSessionRepository {
     fn insert(&self, session_id: &str, session: Session) -> Result<(), String> {
         let mut sessions = self.sessions.write().unwrap();
 
-        sessions
-            .insert(session_id.to_string(), session);
+        sessions.insert(session_id.to_string(), session);
 
         Ok(())
     }
-    
+
     fn update(&self, session_id: &str, session: Session) -> Result<(), String> {
-        let mut sessions = self.sessions
-            .write()
-            .map_err(|e| e.to_string())?;
+        let mut sessions = self.sessions.write().map_err(|e| e.to_string())?;
 
         if !sessions.contains_key(session_id) {
             return Err("Session does not exist".to_string());
         }
 
-        sessions
-            .insert(session_id.to_string(), session);
+        sessions.insert(session_id.to_string(), session);
 
         Ok(())
     }
-    
+
     fn set_table(&self, session_id: &str, table: Table) -> Result<(), String> {
         let mut sessions = self.sessions.write().unwrap();
 
@@ -70,26 +59,22 @@ impl SessionRepository for TauriSessionRepository {
 
         Ok(())
     }
-    
+
     fn get_table(&self, session_id: &str) -> Result<Table, String> {
         let sessions = self.sessions.read().unwrap();
 
-        let session = sessions
-            .get(session_id)
-            .ok_or("Session does not exist")?;
+        let session = sessions.get(session_id).ok_or("Session does not exist")?;
 
         session
             .table
             .clone()
             .ok_or("Table does not exist in session yet".to_string())
     }
-    
+
     fn get_tag_mappings(&self, session_id: &str) -> Result<TagMappings, String> {
         let sessions = self.sessions.read().unwrap();
 
-        let session = sessions
-            .get(session_id)
-            .ok_or("Session does not exist")?;
+        let session = sessions.get(session_id).ok_or("Session does not exist")?;
 
         session
             .tag_mappings

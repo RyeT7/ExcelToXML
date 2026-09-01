@@ -1,9 +1,6 @@
 use std::{
     collections::HashMap,
-    sync::{
-        Arc,
-        Mutex
-    }
+    sync::{Arc, Mutex},
 };
 
 use rust_decimal::Decimal;
@@ -11,23 +8,14 @@ use rust_decimal::Decimal;
 use crate::{
     application::ports::{
         inbound::convertusecase::ConvertUseCase,
-        outbound::{
-            sessionrepository::SessionRepository,
-            xmlwriter::XMLWriter
-        }
+        outbound::{sessionrepository::SessionRepository, xmlwriter::XMLWriter},
     },
     domain::{
         datastructures::table::Table,
-        entities::tagmapping::{
-            TagMapping,
-            TagMappings
-        },
-        enums::{
-            requiredtags::Tags,
-            xmlattributes::XMLAttributes
-        },
-        services::{dates, formula}
-    }
+        entities::tagmapping::{TagMapping, TagMappings},
+        enums::{requiredtags::Tags, xmlattributes::XMLAttributes},
+        services::{dates, formula},
+    },
 };
 
 pub struct ConvertService {
@@ -38,7 +26,7 @@ pub struct ConvertService {
 impl ConvertService {
     pub fn new(
         session_repository: Arc<dyn SessionRepository>,
-        xml_writer: Arc<Mutex<dyn XMLWriter>>
+        xml_writer: Arc<Mutex<dyn XMLWriter>>,
     ) -> Self {
         Self {
             session_repository: session_repository,
@@ -49,18 +37,12 @@ impl ConvertService {
     fn write_no_attributes_open_close_tag(
         &mut self,
         tag: &Tags,
-        content: Option<&str>
+        content: Option<&str>,
     ) -> Result<(), String> {
         self.xml_writer
             .lock()
-            .map_err(
-                |e| format!("Failed to acquire XML Writer lock: {e}")
-            )?
-            .new_open_close_tag(
-                tag.as_literal_str(),
-                &[],
-                content
-            );
+            .map_err(|e| format!("Failed to acquire XML Writer lock: {e}"))?
+            .new_open_close_tag(tag.as_literal_str(), &[], content);
 
         Ok(())
     }
@@ -74,15 +56,20 @@ impl ConvertService {
         mapping: &'a HashMap<String, TagMapping>,
         table: &'a Table,
     ) -> Result<&'a str, String> {
-        let column_or_value = mapping.get(tag.as_hierarchical_str())
-            .ok_or(format!("No mapping found for tag '{}'", tag.as_literal_str()))?;
+        let column_or_value = mapping.get(tag.as_hierarchical_str()).ok_or(format!(
+            "No mapping found for tag '{}'",
+            tag.as_literal_str()
+        ))?;
 
         if let Some(c) = &column_or_value.mapped_column {
             table.get_first(c)
         } else if let Some(v) = &column_or_value.default_value {
             Ok(v.as_str())
         } else {
-            Err(format!("Tag '{}' must have either a mapped column or a default value", tag.as_literal_str()))
+            Err(format!(
+                "Tag '{}' must have either a mapped column or a default value",
+                tag.as_literal_str()
+            ))
         }
     }
 
@@ -148,7 +135,7 @@ impl ConvertService {
             None => Some(
                 "is not a date — Excel did not store it as one, so which part is the month \
                  cannot be known; format the cell as a date in Excel, or type it as YYYY-MM-DD"
-                    .to_string()
+                    .to_string(),
             ),
         }
     }
@@ -186,7 +173,10 @@ impl ConvertService {
 
         let mut problems: Vec<String> = Vec::new();
 
-        for tag in Tags::MAPPABLE.iter().filter(|tag| tag.is_numeric() || tag.is_date()) {
+        for tag in Tags::MAPPABLE
+            .iter()
+            .filter(|tag| tag.is_numeric() || tag.is_date())
+        {
             let entry = match mapping.mappings.get(tag.as_hierarchical_str()) {
                 Some(entry) => entry,
                 // A missing mapping is reported by resolve_value, with the
@@ -274,38 +264,37 @@ impl ConvertService {
         self.write_no_attributes_open_close_tag(tag, Some(&content))
     }
 
-    fn write_good_service_detail (
+    fn write_good_service_detail(
         &mut self,
         tag: &Tags,
         mapping: &HashMap<String, TagMapping>,
         invoice: &Table,
     ) -> Result<(), String> {
-        let column_or_value = mapping.get(tag.as_hierarchical_str())
-            .ok_or(format!("No mapping found for tag '{}'", tag.as_literal_str()))?;
+        let column_or_value = mapping.get(tag.as_hierarchical_str()).ok_or(format!(
+            "No mapping found for tag '{}'",
+            tag.as_literal_str()
+        ))?;
 
         if let Some(c) = &column_or_value.mapped_column {
             for content in invoice.column(c)? {
-                self.write_no_attributes_open_close_tag(
-                    tag,
-                    Some(content)
-                )?;
+                self.write_no_attributes_open_close_tag(tag, Some(content))?;
             }
         } else if let Some(v) = &column_or_value.default_value {
-            self.write_no_attributes_open_close_tag(
-                tag,
-                Some(v)
-            )?;
+            self.write_no_attributes_open_close_tag(tag, Some(v))?;
         } else {
-            return Err(format!("Tag '{}' must have either a mapped column or a default value", tag.as_literal_str()));
+            return Err(format!(
+                "Tag '{}' must have either a mapped column or a default value",
+                tag.as_literal_str()
+            ));
         }
 
         Ok(())
     }
 
-    fn write_good_service_tags (
+    fn write_good_service_tags(
         &mut self,
         mapping: &TagMappings,
-        invoice: &Table
+        invoice: &Table,
     ) -> Result<(), String> {
         // Captured before grouping so it can be reported if the identifier
         // turns out to be non-unique.
@@ -313,7 +302,8 @@ impl ConvertService {
             .get_first(&mapping.invoice_number_column)?
             .to_string();
 
-        let good_services = invoice.group_by(&[mapping.good_service_identifier_column.to_string()])?;
+        let good_services =
+            invoice.group_by(&[mapping.good_service_identifier_column.to_string()])?;
 
         for good_service in good_services {
             // Each good/service must map to exactly one row. If grouping by the
@@ -325,8 +315,8 @@ impl ConvertService {
                 .len();
 
             if row_count > 1 {
-                let identifier_value = good_service
-                    .get_first(&mapping.good_service_identifier_column)?;
+                let identifier_value =
+                    good_service.get_first(&mapping.good_service_identifier_column)?;
 
                 return Err(format!(
                     "Non-unique good/service identifier in invoice '{}': column '{}' value '{}' \
@@ -346,7 +336,8 @@ impl ConvertService {
             let price = Self::resolve_amount(&Tags::Price, &mapping.mappings, &good_service)?;
             let qty = Self::resolve_amount(&Tags::Qty, &mapping.mappings, &good_service)?;
             let vat_rate = Self::resolve_amount(&Tags::VATRate, &mapping.mappings, &good_service)?;
-            let stlg_rate = Self::resolve_amount(&Tags::STLGRate, &mapping.mappings, &good_service)?;
+            let stlg_rate =
+                Self::resolve_amount(&Tags::STLGRate, &mapping.mappings, &good_service)?;
 
             let tax_base = formula::tax_base(price, qty);
             let other_tax_base = formula::other_tax_base(tax_base);
@@ -355,100 +346,58 @@ impl ConvertService {
 
             self.xml_writer
                 .lock()
-                .map_err(
-                    |e| format!("Failed to acquire XML
-                    Writer lock: {e}")
-                )?
-                .new_open_tag(
-                    Tags::GoodService.as_literal_str(),
-                    &[],
-                    None
-                );
+                .map_err(|e| {
+                    format!(
+                        "Failed to acquire XML
+                    Writer lock: {e}"
+                    )
+                })?
+                .new_open_tag(Tags::GoodService.as_literal_str(), &[], None);
 
-            self.write_good_service_detail(
-                &Tags::Opt,
-                &mapping.mappings,
-                &good_service
-            )?;
-    
-            self.write_good_service_detail(
-                &Tags::Code,
-                &mapping.mappings,
-                &good_service
-            )?;
-    
-            self.write_good_service_detail(
-                &Tags::Name,
-                &mapping.mappings,
-                &good_service
-            )?;
-    
-            self.write_good_service_detail(
-                &Tags::Unit,
-                &mapping.mappings,
-                 &good_service
-            )?;
-    
-            self.write_good_service_detail(
-                &Tags::Price,
-                &mapping.mappings,
-                &good_service
-            )?;
-    
-            self.write_good_service_detail(
-                &Tags::Qty,
-                &mapping.mappings,
-                &good_service
-            )?;
-    
-            self.write_good_service_detail(
-                &Tags::TotalDiscount,
-                &mapping.mappings,
-                &good_service
-            )?;
-    
+            self.write_good_service_detail(&Tags::Opt, &mapping.mappings, &good_service)?;
+
+            self.write_good_service_detail(&Tags::Code, &mapping.mappings, &good_service)?;
+
+            self.write_good_service_detail(&Tags::Name, &mapping.mappings, &good_service)?;
+
+            self.write_good_service_detail(&Tags::Unit, &mapping.mappings, &good_service)?;
+
+            self.write_good_service_detail(&Tags::Price, &mapping.mappings, &good_service)?;
+
+            self.write_good_service_detail(&Tags::Qty, &mapping.mappings, &good_service)?;
+
+            self.write_good_service_detail(&Tags::TotalDiscount, &mapping.mappings, &good_service)?;
+
             self.write_no_attributes_open_close_tag(
                 &Tags::TaxBase,
-                Some(&formula::format_amount(tax_base))
+                Some(&formula::format_amount(tax_base)),
             )?;
 
             self.write_no_attributes_open_close_tag(
                 &Tags::OtherTaxBase,
-                Some(&formula::format_amount(other_tax_base))
+                Some(&formula::format_amount(other_tax_base)),
             )?;
 
-            self.write_good_service_detail(
-                &Tags::VATRate,
-                &mapping.mappings,
-                &good_service
-            )?;
+            self.write_good_service_detail(&Tags::VATRate, &mapping.mappings, &good_service)?;
 
             self.write_no_attributes_open_close_tag(
                 &Tags::VAT,
-                Some(&formula::format_amount(vat))
+                Some(&formula::format_amount(vat)),
             )?;
 
-            self.write_good_service_detail(
-                &Tags::STLGRate,
-                &mapping.mappings,
-                &good_service
-            )?;
+            self.write_good_service_detail(&Tags::STLGRate, &mapping.mappings, &good_service)?;
 
             self.write_no_attributes_open_close_tag(
                 &Tags::STLG,
-                Some(&formula::format_amount(stlg))
+                Some(&formula::format_amount(stlg)),
             )?;
-
 
             self.xml_writer
                 .lock()
-                .map_err(
-                    |e| format!("Failed to acquire XML Writer lock: {e}")
-                )?
+                .map_err(|e| format!("Failed to acquire XML Writer lock: {e}"))?
                 .close_current_tag()?;
-    
         }
-        
+
         Ok(())
     }
 }
@@ -471,8 +420,7 @@ impl ConvertUseCase for ConvertService {
             self.session_repository.update(session_id, session)?;
         }
 
-        let table = self.session_repository
-            .get_table(session_id)?;
+        let table = self.session_repository.get_table(session_id)?;
 
         let mapping = self.session_repository.get_tag_mappings(session_id)?;
 
@@ -486,67 +434,47 @@ impl ConvertUseCase for ConvertService {
 
         self.xml_writer
             .lock()
-            .map_err(
-                |e| format!("Failed to acquire XML Writer lock: {e}")
-            )?
+            .map_err(|e| format!("Failed to acquire XML Writer lock: {e}"))?
             .new_open_tag(
-            Tags::TaxInvoiceBulk.as_literal_str(),
-            &[
-                XMLAttributes {
-                    attribute_name: "xmlns:xsd".to_string(),
-                    attribute_value: "http://www.w3.org/2001/XMLSchema".to_string(),
-                },
-                XMLAttributes {
-                    attribute_name: "xmlns:xsi".to_string(),
-                    attribute_value: "http://www.w3.org/2001/XMLSchema-instance".to_string(),
-                }
-            ],
-            None
-        );
+                Tags::TaxInvoiceBulk.as_literal_str(),
+                &[
+                    XMLAttributes {
+                        attribute_name: "xmlns:xsd".to_string(),
+                        attribute_value: "http://www.w3.org/2001/XMLSchema".to_string(),
+                    },
+                    XMLAttributes {
+                        attribute_name: "xmlns:xsi".to_string(),
+                        attribute_value: "http://www.w3.org/2001/XMLSchema-instance".to_string(),
+                    },
+                ],
+                None,
+            );
 
-        self.write_no_attributes_open_close_tag(
-            &Tags::TIN,
-            Some(tin)
-        )?;
+        self.write_no_attributes_open_close_tag(&Tags::TIN, Some(tin))?;
 
         let seller_idtku = formula::idtku(tin);
 
         self.xml_writer
-        .lock()
-            .map_err(
-                |e| format!("Failed to acquire XML Writer lock: {e}")
-            )?
-            .new_open_tag(
-            Tags::ListOfTaxInvoice.as_literal_str(),
-            &[],
-            None
-        );
-        
+            .lock()
+            .map_err(|e| format!("Failed to acquire XML Writer lock: {e}"))?
+            .new_open_tag(Tags::ListOfTaxInvoice.as_literal_str(), &[], None);
+
         for invoice in invoices {
             // <TaxInvoice>
             self.xml_writer
                 .lock()
-                .map_err(
-                    |e| format!("Failed to acquire XML Writer lock: {e}")
-                )?
-                .new_open_tag(
-                    Tags::TaxInvoice.as_literal_str(),
-                    &[],
-                    None
-                );
+                .map_err(|e| format!("Failed to acquire XML Writer lock: {e}"))?
+                .new_open_tag(Tags::TaxInvoice.as_literal_str(), &[], None);
 
             // <TaxInvoiceDate></TaxInvoiceDate>, always ISO. A value that came
             // from a real Excel date cell is already in this form; one typed as
             // text is re-rendered so "2026-4-7" is padded to "2026-04-07".
-            let tax_invoice_date = Self::resolve_date(
-                &Tags::TaxInvoiceDate,
-                mapping_map,
-                &invoice
-            )?;
+            let tax_invoice_date =
+                Self::resolve_date(&Tags::TaxInvoiceDate, mapping_map, &invoice)?;
 
             self.write_no_attributes_open_close_tag(
                 &Tags::TaxInvoiceDate,
-                Some(&tax_invoice_date)
+                Some(&tax_invoice_date),
             )?;
 
             // <TaxInvoiceOpt></TaxInvoiceOpt>
@@ -556,14 +484,12 @@ impl ConvertUseCase for ConvertService {
                 &invoice,
             )?;
 
-
             // <TrxCode></TrxCode>
             self.write_no_attributes_open_close_tag_from_invoice(
                 &Tags::TrxCode,
                 mapping_map,
                 &invoice,
             )?;
-
 
             // <AddInfo></AddInfo>
             self.write_no_attributes_open_close_tag_from_invoice(
@@ -572,7 +498,6 @@ impl ConvertUseCase for ConvertService {
                 &invoice,
             )?;
 
-
             // <CustomDoc></CustomDoc>
             self.write_no_attributes_open_close_tag_from_invoice(
                 &Tags::CustomDoc,
@@ -580,14 +505,12 @@ impl ConvertUseCase for ConvertService {
                 &invoice,
             )?;
 
-
             // <RefDesc></RefDesc>
             self.write_no_attributes_open_close_tag_from_invoice(
                 &Tags::RefDesc,
                 mapping_map,
                 &invoice,
             )?;
-
 
             // <FacilityStamp></FacilityStamp>
             self.write_no_attributes_open_close_tag_from_invoice(
@@ -598,10 +521,7 @@ impl ConvertUseCase for ConvertService {
 
             // <SellerIDTKU></SellerIDTKU>, derived from the seller's TIN and
             // so the same on every invoice in the document.
-            self.write_no_attributes_open_close_tag(
-                &Tags::SellerIDTKU,
-                Some(&seller_idtku)
-            )?;
+            self.write_no_attributes_open_close_tag(&Tags::SellerIDTKU, Some(&seller_idtku))?;
 
             // <BuyerTin></BuyerTin>
             self.write_no_attributes_open_close_tag_from_invoice(
@@ -653,57 +573,45 @@ impl ConvertUseCase for ConvertService {
             )?;
 
             // <BuyerIDTKU></BuyerIDTKU>, derived from the buyer's TIN.
-            let buyer_idtku = formula::idtku(
-                Self::resolve_value(&Tags::BuyerTin, mapping_map, &invoice)?
-            );
+            let buyer_idtku =
+                formula::idtku(Self::resolve_value(&Tags::BuyerTin, mapping_map, &invoice)?);
 
-            self.write_no_attributes_open_close_tag(
-                &Tags::BuyerIDTKU,
-                Some(&buyer_idtku)
-            )?;
+            self.write_no_attributes_open_close_tag(&Tags::BuyerIDTKU, Some(&buyer_idtku))?;
 
             // <ListOfGoodService>
             self.xml_writer
                 .lock()
-                .map_err(
-                    |e| format!("Failed to acquire XML Writer lock: {e}")
-                )?
-                .new_open_tag(
-                    Tags::ListOfGoodService.as_literal_str(),
-                    &[],
-                    None
-                );
+                .map_err(|e| format!("Failed to acquire XML Writer lock: {e}"))?
+                .new_open_tag(Tags::ListOfGoodService.as_literal_str(), &[], None);
 
             self.write_good_service_tags(&mapping, &invoice)?;
 
             // </ListOfGoodService>
             self.xml_writer
                 .lock()
-                .map_err(
-                    |e| format!("Failed to acquire XML Writer lock: {e}")
-                )?
+                .map_err(|e| format!("Failed to acquire XML Writer lock: {e}"))?
                 .close_current_tag()?;
 
             // </TaxInvoice>
             self.xml_writer
                 .lock()
-                .map_err(
-                    |e| format!("Failed to acquire XML Writer lock: {e}")
-                )?
+                .map_err(|e| format!("Failed to acquire XML Writer lock: {e}"))?
                 .close_current_tag()?;
         }
 
         // <ListOfTaxInvoice> and <TaxInvoiceBulk> are still open from the top
         // of the document; close them before extracting the finished XML.
         {
-            let mut writer = self.xml_writer
+            let mut writer = self
+                .xml_writer
                 .lock()
                 .map_err(|e| format!("Failed to acquire XML Writer lock: {e}"))?;
             writer.close_current_tag()?; // </ListOfTaxInvoice>
             writer.close_current_tag()?; // </TaxInvoiceBulk>
         }
 
-        let xml = self.xml_writer
+        let xml = self
+            .xml_writer
             .lock()
             .map_err(|e| format!("Failed to acquire XML Writer lock: {e}"))?
             .take_xml();

@@ -15,8 +15,14 @@ fn amount(value: &str) -> Decimal {
 fn blank_amounts_are_reported_separately_from_unreadable_ones() {
     // The caller decides whether blank is acceptable, so the two cases stay
     // distinguishable.
-    assert_eq!(formula::parse_amount("   "), Err(formula::AmountError::Blank));
-    assert_eq!(formula::parse_amount("n/a"), Err(formula::AmountError::NotANumber));
+    assert_eq!(
+        formula::parse_amount("   "),
+        Err(formula::AmountError::Blank)
+    );
+    assert_eq!(
+        formula::parse_amount("n/a"),
+        Err(formula::AmountError::NotANumber)
+    );
 }
 
 #[test]
@@ -27,8 +33,12 @@ fn surrounding_whitespace_is_tolerated() {
 #[test]
 fn common_spreadsheet_mistakes_get_a_hint() {
     assert!(formula::amount_hint("12%").unwrap().contains("% sign"));
-    assert!(formula::amount_hint("1.234.567").unwrap().contains("thousands separators"));
-    assert!(formula::amount_hint("1.500,50").unwrap().contains("decimal point"));
+    assert!(formula::amount_hint("1.234.567")
+        .unwrap()
+        .contains("thousands separators"));
+    assert!(formula::amount_hint("1.500,50")
+        .unwrap()
+        .contains("decimal point"));
 
     // Following a bare "remove the currency symbol" on a grouped amount would
     // leave "100.000", which reads as 100. The hint has to cover both.
@@ -65,8 +75,14 @@ fn amounts_chain_from_the_rounded_previous_value() {
 
     assert_eq!(formula::format_amount(tax_base), "3000000");
     assert_eq!(formula::format_amount(other_tax_base), "2750000");
-    assert_eq!(formula::format_amount(formula::vat(other_tax_base, amount("12"))), "330000");
-    assert_eq!(formula::format_amount(formula::stlg(other_tax_base, Decimal::ZERO)), "0");
+    assert_eq!(
+        formula::format_amount(formula::vat(other_tax_base, amount("12"))),
+        "330000"
+    );
+    assert_eq!(
+        formula::format_amount(formula::stlg(other_tax_base, Decimal::ZERO)),
+        "0"
+    );
 }
 
 /// Exact half-way values are the whole reason this is decimal arithmetic. Each
@@ -74,13 +90,22 @@ fn amounts_chain_from_the_rounded_previous_value() {
 #[test]
 fn exact_half_cents_round_away_from_zero() {
     // 82.5 × 11 ÷ 100 = 9.075 exactly. f64 gives 9.07.
-    assert_eq!(formula::format_amount(formula::vat(amount("82.5"), amount("11"))), "9.08");
+    assert_eq!(
+        formula::format_amount(formula::vat(amount("82.5"), amount("11"))),
+        "9.08"
+    );
 
     // 1182.5 × 11 ÷ 100 = 130.075 exactly. f64 gives 130.07.
-    assert_eq!(formula::format_amount(formula::vat(amount("1182.5"), amount("11"))), "130.08");
+    assert_eq!(
+        formula::format_amount(formula::vat(amount("1182.5"), amount("11"))),
+        "130.08"
+    );
 
     // 0.3 × 11 ÷ 12 = 0.275 exactly. f64 gives 0.27.
-    assert_eq!(formula::format_amount(formula::other_tax_base(amount("0.3"))), "0.28");
+    assert_eq!(
+        formula::format_amount(formula::other_tax_base(amount("0.3"))),
+        "0.28"
+    );
 
     // The textbook case: 1.005 to two places.
     assert_eq!(formula::format_amount(amount("1.005")), "1.01");
@@ -95,7 +120,10 @@ fn a_plain_ninety_rupiah_line_is_exact() {
 
     assert_eq!(formula::format_amount(tax_base), "90");
     assert_eq!(formula::format_amount(other_tax_base), "82.5");
-    assert_eq!(formula::format_amount(formula::vat(other_tax_base, amount("11"))), "9.08");
+    assert_eq!(
+        formula::format_amount(formula::vat(other_tax_base, amount("11"))),
+        "9.08"
+    );
 }
 
 /// Decimal cell values that have no exact binary representation.

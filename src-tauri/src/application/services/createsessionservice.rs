@@ -3,12 +3,9 @@ use std::sync::Arc;
 use crate::application::{
     ports::{
         inbound::createsessionusecase::CreateSessionUseCase,
-        outbound::{
-            idgenerator::IdGenerator,
-            sessionrepository::SessionRepository
-        }
+        outbound::{idgenerator::IdGenerator, sessionrepository::SessionRepository},
     },
-    session::session::Session
+    session::session::Session,
 };
 
 pub struct CreateSessionService {
@@ -17,13 +14,13 @@ pub struct CreateSessionService {
 }
 
 impl CreateSessionService {
-    pub fn new (
+    pub fn new(
         session_repository: Arc<dyn SessionRepository>,
         id_generator: Arc<dyn IdGenerator>,
     ) -> Self {
         Self {
             session_repository: session_repository,
-            id_generator: id_generator
+            id_generator: id_generator,
         }
     }
 }
@@ -32,7 +29,8 @@ impl CreateSessionUseCase for CreateSessionService {
     fn create_session(&self) -> Result<String, String> {
         let session_id = self.id_generator.create()?;
 
-        self.session_repository.insert(&session_id, Session::new())?;
+        self.session_repository
+            .insert(&session_id, Session::new())?;
 
         Ok(session_id)
     }

@@ -14,10 +14,7 @@ pub struct TagMapping {
 }
 
 impl TagMapping {
-    pub fn new(
-        mapped_column: Option<String>,
-        default_value: Option<String>,
-    ) -> Self {
+    pub fn new(mapped_column: Option<String>, default_value: Option<String>) -> Self {
         TagMapping {
             mapped_column,
             default_value,
@@ -29,7 +26,8 @@ impl TagMapping {
     }
 
     pub fn get_value(&self) -> Option<&str> {
-        self.mapped_column.as_deref()
+        self.mapped_column
+            .as_deref()
             .or(self.default_value.as_deref())
     }
 }

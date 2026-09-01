@@ -1,27 +1,25 @@
 //! Invoices and their goods must appear in the document in the order the
 //! spreadsheet lists them.
 
-use std::sync::{Arc, Mutex};
 use std::collections::HashMap;
+use std::sync::{Arc, Mutex};
 
 use exceltoxml_lib::{
     application::{
         ports::{
-            inbound::convertusecase::ConvertUseCase,
-            outbound::sessionrepository::SessionRepository
+            inbound::convertusecase::ConvertUseCase, outbound::sessionrepository::SessionRepository,
         },
         services::convertservice::ConvertService,
-        session::session::Session
+        session::session::Session,
     },
     domain::{
         datastructures::table::Table,
         entities::tagmapping::{TagMapping, TagMappings},
-        enums::requiredtags::Tags
+        enums::requiredtags::Tags,
     },
     infrastructure::adapters::outputs::{
-        customxmlwriter::CustomXMLWriter,
-        taurisessionrepository::TauriSessionRepository
-    }
+        customxmlwriter::CustomXMLWriter, taurisessionrepository::TauriSessionRepository,
+    },
 };
 
 const SESSION_ID: &str = "ordering";
@@ -59,30 +57,38 @@ fn mappings() -> TagMappings {
     let mut mappings: HashMap<String, TagMapping> = Tags::MAPPABLE
         .iter()
         .filter(|tag| !tag.is_derived())
-        .map(|tag| (
-            tag.as_hierarchical_str().to_string(),
-            TagMapping::new(None, Some(String::new()))
-        ))
+        .map(|tag| {
+            (
+                tag.as_hierarchical_str().to_string(),
+                TagMapping::new(None, Some(String::new())),
+            )
+        })
         .collect();
 
-    for tag in [Tags::BuyerTin, Tags::Price, Tags::Qty, Tags::VATRate, Tags::STLGRate] {
+    for tag in [
+        Tags::BuyerTin,
+        Tags::Price,
+        Tags::Qty,
+        Tags::VATRate,
+        Tags::STLGRate,
+    ] {
         mappings.insert(
             tag.as_hierarchical_str().to_string(),
-            TagMapping::new(Some(tag.as_literal_str().to_string()), None)
+            TagMapping::new(Some(tag.as_literal_str().to_string()), None),
         );
     }
 
     for (tag, column) in [(Tags::TaxInvoiceDate, "Date"), (Tags::Name, "Item")] {
         mappings.insert(
             tag.as_hierarchical_str().to_string(),
-            TagMapping::new(Some(column.to_string()), None)
+            TagMapping::new(Some(column.to_string()), None),
         );
     }
 
     // RefDesc carries the invoice number so the order is visible in the output.
     mappings.insert(
         Tags::RefDesc.as_hierarchical_str().to_string(),
-        TagMapping::new(Some("InvNo".to_string()), None)
+        TagMapping::new(Some("InvNo".to_string()), None),
     );
 
     TagMappings {
@@ -95,18 +101,29 @@ fn mappings() -> TagMappings {
 fn invoice_order() -> Vec<String> {
     let repository = Arc::new(TauriSessionRepository::new());
 
-    repository.insert(SESSION_ID, Session {
-        table: Some(ordered_table()),
-        xml: None,
-        tag_mappings: Some(mappings()),
-    }).unwrap();
+    repository
+        .insert(
+            SESSION_ID,
+            Session {
+                table: Some(ordered_table()),
+                xml: None,
+                tag_mappings: Some(mappings()),
+            },
+        )
+        .unwrap();
 
     ConvertService::new(
         repository.clone(),
-        Arc::new(Mutex::new(CustomXMLWriter::new()))
-    ).convert(SESSION_ID, "12123123").unwrap();
+        Arc::new(Mutex::new(CustomXMLWriter::new())),
+    )
+    .convert(SESSION_ID, "12123123")
+    .unwrap();
 
-    repository.get(SESSION_ID).unwrap().xml.unwrap()
+    repository
+        .get(SESSION_ID)
+        .unwrap()
+        .xml
+        .unwrap()
         .lines()
         .filter_map(|line| {
             let line = line.trim();
@@ -121,18 +138,29 @@ fn invoice_order() -> Vec<String> {
 fn good_service_order(table: Table) -> Vec<String> {
     let repository = Arc::new(TauriSessionRepository::new());
 
-    repository.insert(SESSION_ID, Session {
-        table: Some(table),
-        xml: None,
-        tag_mappings: Some(mappings()),
-    }).unwrap();
+    repository
+        .insert(
+            SESSION_ID,
+            Session {
+                table: Some(table),
+                xml: None,
+                tag_mappings: Some(mappings()),
+            },
+        )
+        .unwrap();
 
     ConvertService::new(
         repository.clone(),
-        Arc::new(Mutex::new(CustomXMLWriter::new()))
-    ).convert(SESSION_ID, "12123123").unwrap();
+        Arc::new(Mutex::new(CustomXMLWriter::new())),
+    )
+    .convert(SESSION_ID, "12123123")
+    .unwrap();
 
-    repository.get(SESSION_ID).unwrap().xml.unwrap()
+    repository
+        .get(SESSION_ID)
+        .unwrap()
+        .xml
+        .unwrap()
         .lines()
         .filter_map(|line| {
             let line = line.trim();
@@ -159,7 +187,7 @@ fn goods_keep_the_order_the_spreadsheet_lists_them_in() {
     // Collapse the ten rows onto one invoice, leaving ten distinct goods.
     table.data.insert(
         "InvNo".to_string(),
-        std::iter::repeat("IV01".to_string()).take(10).collect()
+        std::iter::repeat("IV01".to_string()).take(10).collect(),
     );
 
     let expected: Vec<String> = (1..=10).map(|row| format!("ITEM{row:02}")).collect();

@@ -4,7 +4,7 @@
 use exceltoxml_lib::{
     application::ports::outbound::xmlwriter::XMLWriter,
     domain::enums::xmlattributes::XMLAttributes,
-    infrastructure::adapters::outputs::customxmlwriter::CustomXMLWriter
+    infrastructure::adapters::outputs::customxmlwriter::CustomXMLWriter,
 };
 
 fn write_content(content: &str) -> String {
@@ -20,10 +20,7 @@ fn write_content(content: &str) -> String {
 fn quotation_marks_are_left_as_typed() {
     let name = "Check Valve One Way InFlow 1/2\" SS304 Body + Plastic Insert";
 
-    assert_eq!(
-        write_content(name),
-        format!("<Name>{name}</Name>\n")
-    );
+    assert_eq!(write_content(name), format!("<Name>{name}</Name>\n"));
 }
 
 #[test]
@@ -35,8 +32,14 @@ fn apostrophes_are_left_as_typed() {
 /// they are the only ones escaped.
 #[test]
 fn markup_characters_are_escaped_exactly_once() {
-    assert_eq!(write_content("Nuts & Bolts"), "<Name>Nuts &amp; Bolts</Name>\n");
-    assert_eq!(write_content("Bracket <L> type"), "<Name>Bracket &lt;L&gt; type</Name>\n");
+    assert_eq!(
+        write_content("Nuts & Bolts"),
+        "<Name>Nuts &amp; Bolts</Name>\n"
+    );
+    assert_eq!(
+        write_content("Bracket <L> type"),
+        "<Name>Bracket &lt;L&gt; type</Name>\n"
+    );
 }
 
 /// Escaping `&` last would rewrite the `&` of each entity just produced,
@@ -70,7 +73,7 @@ fn attribute_values_escape_their_delimiter() {
             attribute_name: "note".to_string(),
             attribute_value: "1/2\" & <wide>".to_string(),
         }],
-        Some("body")
+        Some("body"),
     );
 
     assert_eq!(
@@ -90,11 +93,13 @@ fn ordinary_attribute_values_are_untouched() {
             attribute_name: "xmlns:xsd".to_string(),
             attribute_value: "http://www.w3.org/2001/XMLSchema".to_string(),
         }],
-        Some("x")
+        Some("x"),
     );
 
     assert!(
-        writer.take_xml().contains("xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\""),
+        writer
+            .take_xml()
+            .contains("xmlns:xsd=\"http://www.w3.org/2001/XMLSchema\""),
         "namespace declaration should be written verbatim"
     );
 }

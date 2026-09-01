@@ -1,2 +1,2 @@
-pub mod xmlattributes;
 pub mod requiredtags;
+pub mod xmlattributes;
