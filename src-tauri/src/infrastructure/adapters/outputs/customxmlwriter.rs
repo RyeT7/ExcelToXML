@@ -18,6 +18,17 @@ impl CustomXMLWriter {
         }
     }
 
+    fn escape_markup(value: &str) -> String {
+        value
+            .replace('&', "&amp;")
+            .replace('<', "&lt;")
+            .replace('>', "&gt;")
+    }
+
+    fn escape_attribute(value: &str) -> String {
+        Self::escape_markup(value).replace('"', "&quot;")
+    }
+
     fn create_open_tag(
         &mut self,
         tag_name: &str,
@@ -86,7 +97,11 @@ impl CustomXMLWriter {
         if attributes.len() > 0 {
             for attr in attributes {
                 self.xml.push_str(
-                    &format!(" {}=\"{}\"", attr.attribute_name, attr.attribute_value)
+                    &format!(
+                        " {}=\"{}\"",
+                        attr.attribute_name,
+                        Self::escape_attribute(&attr.attribute_value)
+                    )
                 );
             }
         }
@@ -123,11 +138,7 @@ impl XMLWriter for CustomXMLWriter {
     }
     
     fn escape_characters(&mut self, content: &str) -> String {
-        content.replace("\"", "&quot;")
-            .replace("'", "&apos;")
-            .replace("<", "&lt;")
-            .replace(">", "&gt;")
-            .replace("&", "&amp;")
+        Self::escape_markup(content)
     }
 
     fn close_current_tag(&mut self) -> Result<(), String> {
