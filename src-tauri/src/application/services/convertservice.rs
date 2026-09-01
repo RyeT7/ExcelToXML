@@ -302,8 +302,9 @@ impl ConvertService {
             .get_first(&mapping.invoice_number_column)?
             .to_string();
 
-        let good_services =
-            invoice.group_by(&[mapping.good_service_identifier_column.to_string()])?;
+        let good_services = invoice.group_by(std::slice::from_ref(
+            &mapping.good_service_identifier_column,
+        ))?;
 
         for good_service in good_services {
             // Each good/service must map to exactly one row. If grouping by the
@@ -430,7 +431,7 @@ impl ConvertUseCase for ConvertService {
         // once, while rows can still be identified by their position.
         Self::validate_cells(&table, &mapping)?;
 
-        let invoices = table.group_by(&[mapping.invoice_number_column.to_string()])?;
+        let invoices = table.group_by(std::slice::from_ref(&mapping.invoice_number_column))?;
 
         self.xml_writer
             .lock()
