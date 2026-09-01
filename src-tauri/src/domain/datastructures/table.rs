@@ -150,22 +150,38 @@ impl Table {
             }
         }
 
-        let all_keys: Vec<String> = self.data.keys().cloned().collect();
+        let all_keys: Vec<String> = self.headers.clone();
 
-        let mut groups: HashMap<Vec<String>, Vec<usize>> = HashMap::new();
+        // Rows of each group, in the order the groups are first met — which is
+        // the order the sheet lists them in. A HashMap has no order of its own
+        // and Rust seeds its hasher afresh for every process, so collecting the
+        // groups in it alone would emit the invoices in an order that changed
+        // on each run of the program.
+        let mut groups: Vec<Vec<usize>> = Vec::new();
+
+        // Where each group sits in `groups`. Keys borrow the cells rather than
+        // copying them, and a position is only ever inserted once per group,
+        // so no row costs a clone.
+        let mut position: HashMap<Vec<&str>, usize> = HashMap::new();
 
         for i in 0..len  {
-            let group_key = keys
+            let group_key: Vec<&str> = keys
                 .iter()
-                .map(|k| self.data[k][i].clone())
+                .map(|k| self.data[k][i].as_str())
                 .collect();
 
-            groups.entry(group_key).or_default().push(i);
+            match position.get(&group_key) {
+                Some(&group) => groups[group].push(i),
+                None => {
+                    position.insert(group_key, groups.len());
+                    groups.push(vec![i]);
+                },
+            }
         }
 
         let mut result = Vec::new();
 
-        for (_group_keys, indices) in groups {
+        for indices in &groups {
             let mut new_table = Table::new(&all_keys)?;
 
             for col in &all_keys {
