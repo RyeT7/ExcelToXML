@@ -59,8 +59,9 @@ jobs:
             file \
             wget
 
-      - uses: dtolnay/rust-toolchain@stable
+      - uses: dtolnay/rust-toolchain@master
         with:
+          toolchain: 1.94.1
           components: rustfmt, clippy
 
       - uses: Swatinem/rust-cache@v2
