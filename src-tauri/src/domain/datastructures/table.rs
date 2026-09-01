@@ -123,7 +123,7 @@ impl Table {
         Ok(())
     }
     
-    pub fn group_by(&mut self, keys: &[String]) -> Result<Vec<Table>, String> {
+    pub fn group_by(&self, keys: &[String]) -> Result<Vec<Table>, String> {
         for key in keys {
             match self.data.contains_key(key) {
                 true => {},

@@ -305,7 +305,7 @@ impl ConvertService {
     fn write_good_service_tags (
         &mut self,
         mapping: &TagMappings,
-        mut invoice: Table
+        invoice: &Table
     ) -> Result<(), String> {
         // Captured before grouping so it can be reported if the identifier
         // turns out to be non-unique.
@@ -471,7 +471,7 @@ impl ConvertUseCase for ConvertService {
             self.session_repository.update(session_id, session)?;
         }
 
-        let mut table = self.session_repository
+        let table = self.session_repository
             .get_table(session_id)?;
 
         let mapping = self.session_repository.get_tag_mappings(session_id)?;
@@ -674,7 +674,7 @@ impl ConvertUseCase for ConvertService {
                     None
                 );
 
-            self.write_good_service_tags(&mapping, invoice.clone())?;
+            self.write_good_service_tags(&mapping, &invoice)?;
 
             // </ListOfGoodService>
             self.xml_writer
