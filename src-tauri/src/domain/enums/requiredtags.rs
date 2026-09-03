@@ -58,7 +58,7 @@ impl Tags {
                 "TaxInvoiceBulk.ListOfTaxInvoice.TaxInvoice.BuyerDocumentNumber"
             }
             Tags::BuyerName => "TaxInvoiceBulk.ListOfTaxInvoice.TaxInvoice.BuyerName",
-            Tags::BuyerAddress => "TaxInvoiceBulk.ListOfTaxInvoice.TaxInvoice.BuyerAddress",
+            Tags::BuyerAddress => "TaxInvoiceBulk.ListOfTaxInvoice.TaxInvoice.BuyerAdress",
             Tags::BuyerEmail => "TaxInvoiceBulk.ListOfTaxInvoice.TaxInvoice.BuyerEmail",
             Tags::BuyerIDTKU => "TaxInvoiceBulk.ListOfTaxInvoice.TaxInvoice.BuyerIDTKU",
             Tags::ListOfGoodService => "TaxInvoiceBulk.ListOfTaxInvoice.ListOfGoodService",
@@ -108,7 +108,7 @@ impl Tags {
             Tags::BuyerCountry => "BuyerCountry",
             Tags::BuyerDocumentNumber => "BuyerDocumentNumber",
             Tags::BuyerName => "BuyerName",
-            Tags::BuyerAddress => "BuyerAddress",
+            Tags::BuyerAddress => "BuyerAdress",
             Tags::BuyerEmail => "BuyerEmail",
             Tags::BuyerIDTKU => "BuyerIDTKU",
             Tags::ListOfGoodService => "ListOfGoodService",
